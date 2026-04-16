@@ -1,0 +1,18 @@
+
+spring:
+  application:
+    name: delivhub
+#  datasource:
+#    url: jdbc:postgresql://[RDS-?????]:5432/[DB??]
+#    username: postgres
+#    password: [????]
+#    driver-class-name: org.postgresql.Driver
+#
+#  jpa:
+#    database-platform: org.hibernate.spatial.dialect.postgis.PostgisDialect # ??: PostGIS ?? ?? ??
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
+#    properties:
+#      hibernate:
+#        format_sql: true # SQL? ??? ????? ?? (?? ??)

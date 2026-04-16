@@ -27,6 +27,12 @@ dependencies {
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+
+	// PostgreSQL 드라이버
+	runtimeOnly 'org.postgresql:postgresql'
+
+	// Hibernate Spatial (PostGIS 위치 데이터를 Java 객체로 다루기 위함)
+	implementation 'org.hibernate.orm:hibernate-spatial'
 }
 
 tasks.named('test') {
