@@ -1,8 +1,8 @@
 ---
-name: 기능 개발
-about: 기능 개발 시 사용
+name: "\U0001F331 Feature"
+about: 새로운 기능 추가
 title: "[feat] "
-labels: ''
+labels: feature
 assignees: ''
 
 ---
