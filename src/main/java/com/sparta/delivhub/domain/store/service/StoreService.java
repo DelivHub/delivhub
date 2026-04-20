@@ -1,4 +1,4 @@
-package com.sparta.delivhub.store.service;
+package com.sparta.delivhub.domain.store.service;
 
 import org.springframework.stereotype.Service;
 

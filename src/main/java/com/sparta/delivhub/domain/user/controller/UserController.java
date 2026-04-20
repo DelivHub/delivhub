@@ -1,4 +1,4 @@
-package com.sparta.delivhub.user.controller;
+package com.sparta.delivhub.domain.user.controller;
 
 import org.springframework.stereotype.Controller;
 

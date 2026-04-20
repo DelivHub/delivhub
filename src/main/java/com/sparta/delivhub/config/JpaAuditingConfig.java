@@ -1,4 +1,4 @@
-package com.sparta.delivhub.common.config;
+package com.sparta.delivhub.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
