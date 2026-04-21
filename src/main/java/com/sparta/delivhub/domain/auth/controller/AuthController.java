@@ -1,6 +1,8 @@
 package com.sparta.delivhub.domain.auth.controller;
 
 import com.sparta.delivhub.common.dto.ApiResponse;
+import com.sparta.delivhub.domain.auth.dto.LoginRequest;
+import com.sparta.delivhub.domain.auth.dto.LoginResponse;
 import com.sparta.delivhub.domain.auth.dto.SignupRequest;
 import com.sparta.delivhub.domain.auth.dto.SignupResponse;
 import com.sparta.delivhub.domain.auth.service.AuthService;
@@ -30,4 +32,13 @@ public class AuthController {
                 .body(ApiResponse.success(response));
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
+            @Valid @RequestBody LoginRequest request
+    ) {
+        LoginResponse response = authService.login(request);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(response));
+    }
 }
