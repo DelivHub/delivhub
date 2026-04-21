@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "ai_logs")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EntityListeners(AuditingEntityListener.class)
 public class AiLog {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -38,12 +40,10 @@ public class AiLog {
     private String createdBy;
 
     @Builder
-    public AiLog(String userId, String requestText, String responseText, String requestType, String createdBy) {
+    public AiLog(String userId, String requestText, String responseText, String requestType) {
         this.userId = userId;
         this.requestText = requestText;
         this.responseText = responseText;
         this.requestType = requestType;
-        this.createdAt = LocalDateTime.now();
-        this.createdBy = createdBy;
     }
 }
