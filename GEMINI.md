@@ -14,7 +14,6 @@
 - **Restrictions**: `mName`, `name_` 등 접두사/접미사 사용 금지
 
 ### 2. Formatting
-- **Indentation**: 2 spaces
 - **Line Length**: Max 100 characters
 - **Braces**: 한 줄짜리 조건문/반복문도 반드시 중괄호 `{}` 사용
 - **Declarations**: 변수 선언은 한 번에 하나씩 (`int a; int b;`)
