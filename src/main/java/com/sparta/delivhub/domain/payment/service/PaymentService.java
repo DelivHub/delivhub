@@ -20,7 +20,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaymentService {
 
-    private PaymentRepository paymentRepository;
+    private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository; // 주문 확인을 위해 필요
 
     @Transactional
@@ -32,6 +32,13 @@ public class PaymentService {
         // 2. 권한 검증 (이 주문을 한 사람이 현재 로그인한 유저가 맞는지)
         if (!order.getUser().getId().equals(currentUserId)) {
             throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
+        }
+
+        // 사장 본인 가게 결제 불가 (가짜 리뷰 작성 방지)
+        // Store 엔티티에 사장 ID를 가져오는 메서드(getOwnerId 혹은 getUser().getId())에 맞춰 수정해 주세요.
+        String storeOwnerId = order.getStore().getOwnerId();
+        if (storeOwnerId.equals(currentUserId)) {
+            throw new BusinessException(ErrorCode.CANNOT_PAY_OWN_STORE);
         }
 
         // 3. 중복 결제 방어 (이미 해당 주문에 대한 결제가 있는지 확인)
@@ -60,7 +67,7 @@ public class PaymentService {
         // 6. 저장
         Payment savedPayment = paymentRepository.save(payment);
 
-        // 7. DTO로 변환하여 반환
+        // 7. DTO로 변환
         return new ResponsePaymentDTO(savedPayment);
     }
 
