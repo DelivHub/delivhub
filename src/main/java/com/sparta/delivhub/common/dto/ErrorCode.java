@@ -16,7 +16,7 @@ public enum ErrorCode {
     SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C500", "서버 내부 오류가 발생했습니다."),
 
     // 2. User (회원 및 검증 로직)
-    INVALID_USERNAME(HttpStatus.BAD_REQUEST, "U001", "유효하지 않은 사용자 이름입니다."),
+    DUPLICATE_USERNAME(HttpStatus.BAD_REQUEST, "U001", "이미 사용 중인 유저네임입니다."),
     INVALID_EMAIL_FORMAT(HttpStatus.BAD_REQUEST, "U002", "이메일 형식이 올바르지 않습니다."),
     INVALID_PASSWORD_FORMAT(HttpStatus.BAD_REQUEST, "U003", "비밀번호 형식이 올바르지 않습니다."),
     PASSWORD_SAME_AS_CURRENT(HttpStatus.BAD_REQUEST, "U004", "새 비밀번호가 현재 비밀번호와 동일합니다."),
