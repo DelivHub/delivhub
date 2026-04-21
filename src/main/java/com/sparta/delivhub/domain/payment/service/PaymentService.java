@@ -2,7 +2,7 @@ package com.sparta.delivhub.domain.payment.service;
 
 import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
-import com.sparta.delivhub.domain.order.Entity.Order;
+import com.sparta.delivhub.domain.order.entity.Order;
 import com.sparta.delivhub.domain.order.repository.OrderRepository;
 import com.sparta.delivhub.domain.payment.dto.RequestPaymentDTO;
 import com.sparta.delivhub.domain.payment.dto.ResponsePaymentDTO;
@@ -30,16 +30,16 @@ public class PaymentService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
         // 2. 권한 검증 (이 주문을 한 사람이 현재 로그인한 유저가 맞는지)
-        if (!order.getUser().getId().equals(currentUserId)) {
+        if (!order.getUserId().equals(currentUserId)) {
             throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
         }
 
-        // 사장 본인 가게 결제 불가 (가짜 리뷰 작성 방지)
-        // Store 엔티티에 사장 ID를 가져오는 메서드(getOwnerId 혹은 getUser().getId())에 맞춰 수정해 주세요.
-        String storeOwnerId = order.getStore().getOwnerId();
-        if (storeOwnerId.equals(currentUserId)) {
-            throw new BusinessException(ErrorCode.CANNOT_PAY_OWN_STORE);
-        }
+//        // 사장 본인 가게 결제 불가 (가짜 리뷰 작성 방지)
+//        // Store 엔티티에 사장 ID를 가져오는 메서드(getOwnerId 혹은 getUser().getId())에 맞춰 수정해 주세요.
+//        String storeOwnerId = order.getStore().getOwnerId();
+//        if (storeOwnerId.equals(currentUserId)) {
+//            throw new BusinessException(ErrorCode.CANNOT_PAY_OWN_STORE);
+//        }
 
         // 3. 중복 결제 방어 (이미 해당 주문에 대한 결제가 있는지 확인)
         if (paymentRepository.existsByOrderId(order.getId())) {
@@ -79,7 +79,7 @@ public class PaymentService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 결제 내역입니다."));
 
         // 2. 타인의 결제 건인지 확인 (주문한 유저 ID와 현재 로그인한 유저 ID 비교)
-        String ownerId = payment.getOrder().getUser().getId();
+        String ownerId = payment.getOrder().getUserId();
         if (!ownerId.equals(currentUserId)) {
             throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
         }

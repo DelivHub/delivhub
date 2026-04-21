@@ -1,12 +1,12 @@
 package com.sparta.delivhub.domain.review.entity;
 
 import com.sparta.delivhub.common.entity.BaseEntity;
-import com.sparta.delivhub.domain.order.Entity.Order;
-import com.sparta.delivhub.domain.store.Entity.Store;
+import com.sparta.delivhub.domain.order.entity.Order;
+import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Builder;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLRestriction;
@@ -48,7 +48,6 @@ public class Review extends BaseEntity {
     @Column(name = "image_url", length = 255)
     private String imageUrl;
 
-    @Builder
     public Review(Order order, Store store, User user, Integer rating, String content, String imageUrl) {
         this.order = order;
         this.store = store;
