@@ -21,3 +21,8 @@ logging:
     root: info
     org.hibernate.SQL: debug
     org.springframework.security: DEBUG
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-validity-ms: 3600000
+  refresh-token-validity-ms: 604800000
