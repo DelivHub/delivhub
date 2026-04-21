@@ -10,9 +10,7 @@ import org.hibernate.annotations.UuidGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(name = "categories", uniqueConstraints = {
-    @UniqueConstraint(name = "uq_categories_name", columnNames = "name")
-})
+@Table(name = "categories")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -27,6 +25,6 @@ public class Category extends BaseEntity {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "name", length = 100, nullable = false)
+    @Column(name = "name", unique = true, length = 100, nullable = false)
     private String name;
 }
