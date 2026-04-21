@@ -2,14 +2,14 @@ package com.sparta.delivhub.domain.user.entity;
 
 import com.sparta.delivhub.common.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Table(name = "p_user")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class User extends BaseEntity {
 
     @Id
@@ -30,5 +30,6 @@ public class User extends BaseEntity {
     private String nickname;
 
     @Column(name = "is_public", nullable = false)
+    @Builder.Default
     private Boolean isPublic = true;
 }
