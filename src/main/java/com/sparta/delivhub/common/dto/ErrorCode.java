@@ -24,7 +24,6 @@ public enum ErrorCode {
     DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST, "U006", "이미 사용 중인 닉네임입니다."),
     INVALID_ROLE(HttpStatus.BAD_REQUEST, "U007", "유효하지 않은 권한(Role) 값입니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U008", "사용자를 찾을 수 없습니다."),
-    ALREADY_DELETED_USER(HttpStatus.NOT_FOUND, "U009", "이미 탈퇴 처리된 사용자입니다."),
 
     // 3. Auth & Permission (인증 및 인가)
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "A001", "유효하지 않은 토큰입니다."),
