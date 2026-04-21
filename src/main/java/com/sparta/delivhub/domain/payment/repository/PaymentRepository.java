@@ -1,4 +1,4 @@
-package com.sparta.delivhub.payment.repository;
+package com.sparta.delivhub.domain.payment.repository;
 
 import java.util.UUID;
 

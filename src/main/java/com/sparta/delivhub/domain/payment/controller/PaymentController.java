@@ -1,4 +1,4 @@
-package com.sparta.delivhub.payment.controller;
+package com.sparta.delivhub.domain.payment.controller;
 
 import org.springframework.stereotype.Controller;
 

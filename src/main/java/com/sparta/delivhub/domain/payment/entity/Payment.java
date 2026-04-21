@@ -1,4 +1,4 @@
-package com.sparta.delivhub.payment.entity;
+package com.sparta.delivhub.domain.payment.entity;
 
 import jakarta.persistence.Entity;
 import lombok.Getter;

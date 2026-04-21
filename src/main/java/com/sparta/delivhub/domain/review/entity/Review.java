@@ -1,4 +1,4 @@
-package com.sparta.delivhub.review.entity;
+package com.sparta.delivhub.domain.review.entity;
 
 import com.sparta.delivhub.common.entity.BaseEntity;
 import jakarta.persistence.*;

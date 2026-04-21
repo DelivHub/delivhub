@@ -1,4 +1,4 @@
-package com.sparta.delivhub.payment.service;
+package com.sparta.delivhub.domain.payment.service;
 
 import org.springframework.stereotype.Service;
 
