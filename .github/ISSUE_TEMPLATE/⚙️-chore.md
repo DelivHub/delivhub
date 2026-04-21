@@ -1,7 +1,7 @@
 ---
 name: ⚙️ Chore
 about: 빌드, 설정, 패키지 등 기타 작업
-title: "[CHORE] "
+title: "[chore] "
 labels: chore
 ---
 

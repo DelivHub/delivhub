@@ -1,4 +1,4 @@
-package com.sparta.delivhub.review.controller;
+package com.sparta.delivhub.domain.review.controller;
 
 import org.springframework.stereotype.Controller;
 

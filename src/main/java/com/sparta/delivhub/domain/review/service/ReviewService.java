@@ -1,4 +1,4 @@
-package com.sparta.delivhub.review.service;
+package com.sparta.delivhub.domain.review.service;
 
 import org.springframework.stereotype.Service;
 
