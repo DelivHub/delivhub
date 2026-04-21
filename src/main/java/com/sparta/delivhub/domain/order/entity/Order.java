@@ -39,17 +39,17 @@ public class Order extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private com.sparta.delivhub.domain.order.entity.OrderStatus status = com.sparta.delivhub.domain.order.entity.OrderStatus.PENDING;
+    private OrderStatus status = OrderStatus.PENDING;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "order_type", nullable = false)
-    private com.sparta.delivhub.domain.order.entity.OrderType orderType;
+    private OrderType orderType;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<com.sparta.delivhub.domain.order.entity.OrderItem> orderItems = new ArrayList<>();
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     @Builder
-    public Order(String userId, UUID storeId, UUID addressId, Long totalPrice, String request, com.sparta.delivhub.domain.order.entity.OrderType orderType) {
+    public Order(String userId, UUID storeId, UUID addressId, Long totalPrice, String request, OrderType orderType) {
         this.userId = userId;
         this.storeId = storeId;
         this.addressId = addressId;
@@ -59,19 +59,19 @@ public class Order extends BaseEntity {
         // status는 필드 레벨에서 PENDING으로 초기화되어 있으므로 중복 초기화 제거
     }
 
-    public void addOrderItem(com.sparta.delivhub.domain.order.entity.OrderItem orderItem) {
+    public void addOrderItem(OrderItem orderItem) {
         this.orderItems.add(orderItem);
         orderItem.setOrder(this);
     }
 
     public void updateRequest(String request) {
-        if (this.status != com.sparta.delivhub.domain.order.entity.OrderStatus.PENDING) {
+        if (this.status != OrderStatus.PENDING) {
             throw new IllegalStateException("접수된 주문은 요청사항을 수정할 수 없습니다.");
         }
         this.request = request;
     }
 
-    public void updateStatus(com.sparta.delivhub.domain.order.entity.OrderStatus nextStatus) {
+    public void updateStatus(OrderStatus nextStatus) {
         if (!this.status.canTransitionTo(nextStatus)) {
             throw new IllegalStateException("역방향으로 상태를 변경할 수 없습니다.");
         }
@@ -82,6 +82,6 @@ public class Order extends BaseEntity {
      * 직접 상태를 변경하지 않고 updateStatus()를 호출하여 전이 규칙 검증 로직을 거치도록 개선
      */
     public void cancel() {
-        updateStatus(com.sparta.delivhub.domain.order.entity.OrderStatus.CANCELED);
+        updateStatus(OrderStatus.CANCELED);
     }
 }

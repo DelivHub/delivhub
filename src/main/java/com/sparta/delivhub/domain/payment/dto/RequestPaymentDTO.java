@@ -18,7 +18,7 @@ public class RequestPaymentDTO {
     // 명세서 요구사항: "결제 금액은 0원보다 커야 합니다."
     @NotNull(message = "결제 금액은 필수입니다.")
     @Min(value = 1, message = "결제 금액은 0원보다 커야 합니다.")
-    private Integer amount;
+    private Long amount;
 
     // 명세서 요구사항: "지원하지 않는 결제 수단입니다." 방어를 위한 1차 빈 값 체크
     @NotBlank(message = "결제 수단은 필수입니다.")

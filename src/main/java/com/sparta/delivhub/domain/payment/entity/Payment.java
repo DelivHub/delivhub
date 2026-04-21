@@ -28,7 +28,7 @@ public class Payment extends BaseEntity {
     private Order order;
 
     @Column(nullable = false)
-    private Integer amount;
+    private Long amount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false, length = 20)
@@ -39,7 +39,7 @@ public class Payment extends BaseEntity {
     private PaymentStatus status;
 
     @Builder
-    public Payment(Order order, Integer amount, PaymentMethod paymentMethod, PaymentStatus status) {
+    public Payment(Order order, Long amount, PaymentMethod paymentMethod, PaymentStatus status) {
         this.order = order;
         this.amount = amount;
         this.paymentMethod = (paymentMethod != null) ? paymentMethod : PaymentMethod.CARD;

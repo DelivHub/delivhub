@@ -57,6 +57,11 @@ public class PaymentService {
         }
 
         // 5. 결제 엔티티 생성 (명세서 요구사항에 따라 상태를 COMPLETED로 고정)
+
+        //결제 금액이 실제 주문 금액과 맞는지 확인
+        if (!order.getTotalPrice().equals(request.getAmount().longValue())) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_DATA);
+        }
         Payment payment = new Payment(
                 order,
                 request.getAmount(),
@@ -76,7 +81,7 @@ public class PaymentService {
     public void deletePayment(UUID paymentId, String currentUserId) {
         // 1. 결제 내역 조회
         Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 결제 내역입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
 
         // 2. 타인의 결제 건인지 확인 (주문한 유저 ID와 현재 로그인한 유저 ID 비교)
         String ownerId = payment.getOrder().getUserId();
