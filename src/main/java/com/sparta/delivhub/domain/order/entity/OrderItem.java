@@ -1,24 +1,20 @@
 package com.sparta.delivhub.domain.order.entity;
 
+import com.sparta.delivhub.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "p_order_item")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@EntityListeners(AuditingEntityListener.class)
-public class OrderItem {
+public class OrderItem extends BaseEntity {
     @Id
     @UuidGenerator
     @Column(name = "id", updatable = false, nullable = false)
@@ -36,14 +32,6 @@ public class OrderItem {
 
     @Column(name = "unit_price", nullable = false)
     private Long unitPrice;
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @CreatedBy
-    @Column(name = "created_by", updatable = false)
-    private String createdBy;
 
     @Builder
     public OrderItem(UUID menuId, Integer quantity, Long unitPrice) {

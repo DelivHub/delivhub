@@ -56,7 +56,7 @@ public class Order extends BaseEntity {
         this.totalPrice = totalPrice;
         this.request = request;
         this.orderType = orderType;
-        this.status = OrderStatus.PENDING;
+        // status는 필드 레벨에서 PENDING으로 초기화되어 있으므로 중복 초기화 제거
     }
 
     public void addOrderItem(OrderItem orderItem) {
@@ -71,15 +71,17 @@ public class Order extends BaseEntity {
         this.request = request;
     }
 
-    ///  주문 상태를 다음 단계 접수 완료 -> 조리중
     public void updateStatus(OrderStatus nextStatus) {
         if (!this.status.canTransitionTo(nextStatus)) {
-            throw new IllegalStateException("상태를 변경할 수 없습니다.");
+            throw new IllegalStateException("역방향으로 상태를 변경할 수 없습니다.");
         }
         this.status = nextStatus;
     }
 
+    /**
+     * 직접 상태를 변경하지 않고 updateStatus()를 호출하여 전이 규칙 검증 로직을 거치도록 개선
+     */
     public void cancel() {
-        this.status = OrderStatus.CANCELED;
+        updateStatus(OrderStatus.CANCELED);
     }
 }
