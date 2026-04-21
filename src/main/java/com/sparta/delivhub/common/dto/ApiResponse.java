@@ -1,11 +1,13 @@
 package com.sparta.delivhub.common.dto;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+@JsonPropertyOrder({ "status", "message", "data" })
 public class ApiResponse<T> {
     
     private int status;
