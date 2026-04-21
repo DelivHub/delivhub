@@ -33,6 +33,8 @@ public enum ErrorCode {
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "A004", "해당 작업을 수행할 권한이 없습니다."),
     MASTER_ONLY(HttpStatus.FORBIDDEN, "A005", "MASTER 권한만 접근할 수 있습니다."),
     CANNOT_CHANGE_OWN_ROLE(HttpStatus.FORBIDDEN, "A006", "자신의 권한은 스스로 변경할 수 없습니다."),
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "A007", "아이디 또는 비밀번호가 일치하지 않습니다."),
+    DEACTIVATED_ACCOUNT(HttpStatus.FORBIDDEN, "A008", "탈퇴한 계정입니다."),
 
     // 4. Address (주소 로직)
     INVALID_ADDRESSID(HttpStatus.BAD_REQUEST, "AD001", "유효하지 않은 주소 ID입니다."),
