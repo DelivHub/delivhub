@@ -1,7 +1,7 @@
 package com.sparta.delivhub.domain.menu.controller;
 
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RestController;
 
-@Controller
+@RestController
 public class MenuController {
 }
