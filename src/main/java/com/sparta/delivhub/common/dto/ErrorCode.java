@@ -16,7 +16,7 @@ public enum ErrorCode {
     SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C500", "서버 내부 오류가 발생했습니다."),
 
     // 2. User (회원 및 검증 로직)
-    INVALID_USERNAME(HttpStatus.BAD_REQUEST, "U001", "유효하지 않은 사용자 이름입니다."),
+    DUPLICATE_USERNAME(HttpStatus.BAD_REQUEST, "U001", "이미 사용 중인 유저네임입니다."),
     INVALID_EMAIL_FORMAT(HttpStatus.BAD_REQUEST, "U002", "이메일 형식이 올바르지 않습니다."),
     INVALID_PASSWORD_FORMAT(HttpStatus.BAD_REQUEST, "U003", "비밀번호 형식이 올바르지 않습니다."),
     PASSWORD_SAME_AS_CURRENT(HttpStatus.BAD_REQUEST, "U004", "새 비밀번호가 현재 비밀번호와 동일합니다."),
@@ -24,7 +24,6 @@ public enum ErrorCode {
     DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST, "U006", "이미 사용 중인 닉네임입니다."),
     INVALID_ROLE(HttpStatus.BAD_REQUEST, "U007", "유효하지 않은 권한(Role) 값입니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U008", "사용자를 찾을 수 없습니다."),
-    ALREADY_DELETED_USER(HttpStatus.NOT_FOUND, "U009", "이미 탈퇴 처리된 사용자입니다."),
 
     // 3. Auth & Permission (인증 및 인가)
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "A001", "유효하지 않은 토큰입니다."),
@@ -33,6 +32,8 @@ public enum ErrorCode {
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "A004", "해당 작업을 수행할 권한이 없습니다."),
     MASTER_ONLY(HttpStatus.FORBIDDEN, "A005", "MASTER 권한만 접근할 수 있습니다."),
     CANNOT_CHANGE_OWN_ROLE(HttpStatus.FORBIDDEN, "A006", "자신의 권한은 스스로 변경할 수 없습니다."),
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "A007", "아이디 또는 비밀번호가 일치하지 않습니다."),
+    DEACTIVATED_ACCOUNT(HttpStatus.FORBIDDEN, "A008", "탈퇴한 계정입니다."),
 
     // 4. Address (주소 로직)
     INVALID_ADDRESSID(HttpStatus.BAD_REQUEST, "AD001", "유효하지 않은 주소 ID입니다."),
