@@ -20,7 +20,7 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@SQLDelete(sql = "UPDATE stores SET deleted_at = NOW() WHERE id = ?")
+@SQLDelete(sql = "UPDATE p_store SET deleted_at = NOW() WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Store extends BaseEntity {
 
@@ -48,6 +48,9 @@ public class Store extends BaseEntity {
     @Column(name = "address", nullable = false, columnDefinition = "TEXT")
     private String address;
 
+    @Column(name = "number", nullable = false)
+    private String number;
+
     @Builder.Default
     @Column(name = "is_hidden", nullable = false)
     private Boolean isHidden = false;
@@ -56,11 +59,12 @@ public class Store extends BaseEntity {
     @Column(name = "average_rating", nullable = false, precision = 2, scale = 1)
     private BigDecimal averageRating = BigDecimal.ZERO;
 
-    public void updateStore(String name, String address, Boolean isHidden, Category category, Area area) {
+    public void updateStore(String name, String address, Boolean isHidden, Category category, Area area, String number) {
         this.name = name;
         this.address = address;
-        this.isHidden = isHidden;
         this.category = category;
         this.area = area;
+        this.number = number;
+        this.isHidden = isHidden;
     }
 }
