@@ -5,6 +5,9 @@ import com.sparta.delivhub.domain.order.dto.OrderResponseDto;
 import com.sparta.delivhub.domain.order.entity.Order;
 import com.sparta.delivhub.domain.order.entity.OrderItem;
 import com.sparta.delivhub.domain.order.entity.OrderStatus;
+import com.sparta.delivhub.domain.order.exception.OrderCancellationNotAllowedException;
+import com.sparta.delivhub.domain.order.exception.OrderNotFoundException;
+import com.sparta.delivhub.domain.order.exception.UnauthorizedOrderAccessException;
 import com.sparta.delivhub.domain.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,6 +27,7 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class OrderService {
 
+    private static final int ORDER_CANCEL_LIMIT_MINUTES = 5;
     private final OrderRepository orderRepository;
 
     @Transactional
@@ -57,8 +61,8 @@ public class OrderService {
     }
 
     public Page<OrderResponseDto> getOrders(String userId, String role, UUID storeId, OrderStatus status, int page, int size) {
-        if (size != 10 && size != 30 && size != 50) size = 10;
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        int validatedSize = validatePageSize(size);
+        Pageable pageable = PageRequest.of(page, validatedSize, Sort.by("createdAt").descending());
 
         if (role.equals("MASTER") || role.equals("MANAGER")) {
             return orderRepository.findAllByDeletedAtIsNull(pageable).map(OrderResponseDto::from);
@@ -73,11 +77,10 @@ public class OrderService {
     }
 
     public OrderResponseDto getOrder(UUID orderId, String userId, String role) {
-        Order order = orderRepository.findByIdAndDeletedAtIsNull(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 주문입니다."));
+        Order order = findOrderOrThrow(orderId);
 
         if (!role.equals("MASTER") && !role.equals("MANAGER") && !order.getUserId().equals(userId)) {
-            throw new IllegalStateException("조회 권한이 없습니다.");
+            throw new UnauthorizedOrderAccessException("조회 권한이 없습니다.");
         }
 
         return OrderResponseDto.from(order);
@@ -85,10 +88,9 @@ public class OrderService {
 
     @Transactional
     public OrderResponseDto updateRequest(UUID orderId, String newRequest, String userId) {
-        Order order = orderRepository.findByIdAndDeletedAtIsNull(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 주문입니다."));
+        Order order = findOrderOrThrow(orderId);
         if (!order.getUserId().equals(userId)) {
-            throw new IllegalStateException("본인 주문만 수정 가능합니다.");
+            throw new UnauthorizedOrderAccessException("본인 주문만 수정 가능합니다.");
         }
         order.updateRequest(newRequest);
         return OrderResponseDto.from(order);
@@ -96,14 +98,15 @@ public class OrderService {
 
     @Transactional
     public OrderResponseDto updateStatus(UUID orderId, OrderStatus nextStatus, String userId, String role) {
-        Order order = orderRepository.findByIdAndDeletedAtIsNull(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 주문입니다."));
+        Order order = findOrderOrThrow(orderId);
 
         if (role.equals("OWNER")) {
             List<UUID> ownerStoreIds = getOwnerStoreIds(userId);
             if (!ownerStoreIds.contains(order.getStoreId())) {
-                throw new IllegalStateException("본인 가게의 주문만 상태를 변경할 수 있습니다.");
+                throw new UnauthorizedOrderAccessException("본인 가게의 주문만 상태를 변경할 수 있습니다.");
             }
+        } else if (!role.equals("MASTER") && !role.equals("MANAGER")) {
+            throw new UnauthorizedOrderAccessException("주문 상태를 변경할 권한이 없습니다.");
         }
 
         order.updateStatus(nextStatus);
@@ -112,16 +115,15 @@ public class OrderService {
 
     @Transactional
     public OrderResponseDto cancelOrder(UUID orderId, String userId, String role) {
-        Order order = orderRepository.findByIdAndDeletedAtIsNull(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 주문입니다."));
+        Order order = findOrderOrThrow(orderId);
 
         if (!role.equals("MASTER") && !order.getUserId().equals(userId)) {
-            throw new IllegalStateException("권한이 없습니다.");
+            throw new UnauthorizedOrderAccessException();
         }
 
         long minutesPassed = Duration.between(order.getCreatedAt(), LocalDateTime.now()).toMinutes();
-        if (minutesPassed >= 5 && !role.equals("MASTER")) {
-            throw new IllegalStateException("주문 생성 후 5분이 경과하여 취소할 수 없습니다.");
+        if (minutesPassed >= ORDER_CANCEL_LIMIT_MINUTES && !role.equals("MASTER")) {
+            throw new OrderCancellationNotAllowedException();
         }
 
         order.cancel();
@@ -131,8 +133,20 @@ public class OrderService {
     @Transactional
     public void deleteOrder(UUID orderId, String adminId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 주문입니다."));
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
         order.softDelete(adminId);
+    }
+
+    private Order findOrderOrThrow(UUID orderId) {
+        return orderRepository.findByIdAndDeletedAtIsNull(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+    }
+
+    private int validatePageSize(int size) {
+        if (size == 10 || size == 30 || size == 50) {
+            return size;
+        }
+        return 10;
     }
 
     private long getActualMenuPrice(UUID menuId) {

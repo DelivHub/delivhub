@@ -4,12 +4,15 @@ import com.sparta.delivhub.domain.order.entity.OrderType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
+import lombok.*;
 
 import java.util.List;
 import java.util.UUID;
 
 @Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class OrderRequestDto {
     @NotNull(message = "가게 ID는 필수입니다.")
     private UUID storeId;
@@ -17,6 +20,7 @@ public class OrderRequestDto {
     @NotNull(message = "배송지 ID는 필수입니다.")
     private UUID addressId;
 
+    @Builder.Default
     private OrderType orderType = OrderType.ONLINE;
 
     private String request;
@@ -25,6 +29,9 @@ public class OrderRequestDto {
     private List<OrderItemRequestDto> items;
 
     @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class OrderItemRequestDto {
         @NotNull(message = "메뉴 ID는 필수입니다.")
         private UUID menuId;
