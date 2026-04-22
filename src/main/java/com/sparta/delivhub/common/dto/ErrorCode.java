@@ -13,6 +13,7 @@ public enum ErrorCode {
     INVALID_INPUT_DATA(HttpStatus.BAD_REQUEST, "C002", "입력 데이터가 올바르지 않습니다."),
     REQUIRED_FIELD_MISSING(HttpStatus.BAD_REQUEST, "C003", "필수 입력값이 누락되었습니다."),
     NO_CHANGES_DETECTED(HttpStatus.BAD_REQUEST, "C004", "변경할 내용이 없습니다."),
+    INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "C005", "페이징 size는 10, 30, 50만 허용됩니다."),
     SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C500", "서버 내부 오류가 발생했습니다."),
 
     // 2. User (회원 및 검증 로직)
@@ -81,7 +82,6 @@ public enum ErrorCode {
     MENU_NOT_FOUND_ON_UPDATE_STATUS(HttpStatus.NOT_FOUND, "M008", "존재하지 않는 메뉴입니다."),
     MENU_FORBIDDEN_ON_DELETE(HttpStatus.FORBIDDEN, "M009", "본인 가게의 메뉴만 삭제할 수 있습니다."),
     MENU_NOT_FOUND_ON_DELETE(HttpStatus.NOT_FOUND, "M010", "존재하지 않는 메뉴입니다."),
-    MENU_INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "M011", "페이징 size는 10, 30, 50만 허용됩니다."),
 
     // 9. Option (옵션 로직)
     OPTION_VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "OP001", "누락된 값이 있습니다."),
