@@ -20,7 +20,7 @@ public class Payment extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "payment_id", updatable = false, nullable = false) // 1. 명세서 필드명(payment_id) 반영
+    @Column(name = "payment_id", updatable = false, nullable = false)
     private UUID id;
 
     // 결제와 주문은 1:1 관계 (ERD 상 order_id가 UNIQUE)
@@ -39,8 +39,8 @@ public class Payment extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    @ColumnDefault("'PENDING'") // DB 테이블 생성 시 DDL에 DEFAULT 'PENDING' 적용
-    @Builder.Default            // 자바(JPA) 레벨에서 객체 생성 시 기본값 할당
+    @ColumnDefault("'PENDING'")
+    @Builder.Default
     private PaymentStatus status = PaymentStatus.PENDING;
 
     @Builder

@@ -2,12 +2,14 @@ package com.sparta.delivhub.domain.payment.controller;
 
 import com.sparta.delivhub.common.dto.ApiResponse;
 import com.sparta.delivhub.domain.payment.dto.RequestPaymentDTO;
+import com.sparta.delivhub.domain.payment.dto.RequestUpdatePaymentStatusDTO;
 import com.sparta.delivhub.domain.payment.dto.ResponsePaymentDTO;
 import com.sparta.delivhub.domain.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.parameters.P;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
@@ -48,6 +50,29 @@ public class PaymentController {
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responseData));
     }
     
+    // 결제 상태 수정
+    /**
+     * 결제 상태 수정 (관리자 전용)
+     */
+    @PatchMapping("/{paymentId}")
+    public ResponseEntity<ApiResponse<ResponsePaymentDTO>> updatePaymentStatus(
+            @PathVariable UUID paymentId, // URL에서 어떤 결제건인지 식별
+            @Valid @RequestBody RequestUpdatePaymentStatusDTO request, // Body에서 바꿀 상태값을 받음
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        // 1. 유저 권한 추출
+        String userRole = userDetails.getAuthorities().iterator().next().getAuthority();
+
+        // 2. 서비스 로직 실행 (상태값 String을 함께 넘겨줍니다)
+        ResponsePaymentDTO responseData = paymentService.updatePaymentStatus(
+                paymentId,
+                request.getStatus(),
+                userRole
+        );
+
+        // 3. 공통 응답 규격 반환 (200 OK)
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(responseData));
+    }
     // 결제 내역 삭제 (소프트)
     @DeleteMapping("/{paymentId}")
     public ResponseEntity<ApiResponse<Void>> deletePayment(

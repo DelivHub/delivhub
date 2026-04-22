@@ -56,7 +56,7 @@ public class PaymentService {
             throw new BusinessException(ErrorCode.INVALID_PAYMENT_METHOD);
         }
 
-        // 5. 결제 엔티티 생성 (명세서 요구사항에 따라 상태를 COMPLETED로 고정)
+        // 5. 결제 엔티티 생성
 
         //결제 금액이 실제 주문 금액과 맞는지 확인
         if (!order.getTotalPrice().equals(request.getAmount().longValue())) {
@@ -96,6 +96,38 @@ public class PaymentService {
         return new ResponsePaymentDTO(payment);
     }
 
+    /**
+     * 결제 상태 강제 수정 (관리자 전용 백오피스 기능)
+     */
+    @Transactional
+    public ResponsePaymentDTO updatePaymentStatus(UUID paymentId, String newStatusStr, String userRole) {
+
+        // 1. 권한 검증 (명세서 요구사항: MANAGER, MASTER 만 접근 가능)
+        if (!"MANAGER".equals(userRole) && !"MASTER".equals(userRole)) {
+            // 이전에 정의한 에러코드 (예: ACCESS_DENIED 혹은 PAYMENT_ACCESS_DENIED)
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+
+        // 2. 결제 내역 조회
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        // 3. 입력받은 String 상태값을 PaymentStatus Enum으로 변환 및 검증
+        PaymentStatus newStatus;
+        try {
+            newStatus = PaymentStatus.valueOf(newStatusStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            // "CANCELLED", "COMPLETED" 등 약속된 상태값이 아닐 경우 에러
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        // 4. 상태 변경 (엔티티 내부의 변경 메서드 호출)
+        payment.updateStatus(newStatus);
+
+        // 5. 결과 반환
+        // @Transactional 덕분에 코드가 끝날 때 JPA가 알아서 DB에 UPDATE 쿼리를 날려줍니다. (더티 체킹)
+        return new ResponsePaymentDTO(payment);
+    }
 
     @Transactional
     public void deletePayment(UUID paymentId, String currentUserId) {
@@ -111,11 +143,11 @@ public class PaymentService {
 
         // 3. 이미 삭제되었는지 확인 (BaseEntity의 isDeleted() 메서드 활용)
         if (payment.isDeleted()) {
-            throw new BusinessException(ErrorCode.PAYMENT_BAD_REQUEST);
+            throw new BusinessException(ErrorCode.PAYMENT_ALREADY_CANCELLED);
         }
 
         // 4. 안전하게 삭제 처리 (우리가 엔티티에 만든 메서드 호출)
-        // repository.delete(payment); (X) 이렇게 하면 DB에서 아예 날아가거나 JPA가 당황합니다.
+        // repository.delete(payment); (X)
         payment.cancelPayment(currentUserId); // 상태를 DELETED로 바꾸고 deletedAt, deletedBy 기록
     }
 }
