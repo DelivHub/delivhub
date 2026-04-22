@@ -1,0 +1,159 @@
+package com.sparta.delivhub.domain.menu.service;
+
+import com.sparta.delivhub.domain.menu.dto.CreateMenuDto;
+import com.sparta.delivhub.domain.menu.dto.HiddenMenuDto;
+import com.sparta.delivhub.domain.menu.dto.ResponseMenuDto;
+import com.sparta.delivhub.domain.menu.dto.ResponseMenuListDto;
+import com.sparta.delivhub.domain.menu.dto.UpdateMenuDto;
+import com.sparta.delivhub.domain.menu.entity.Menu;
+import com.sparta.delivhub.domain.menu.repository.MenuRepository;
+import com.sparta.delivhub.domain.option.repository.OptionRepository;
+import com.sparta.delivhub.domain.store.entity.Store;
+import com.sparta.delivhub.domain.store.repository.StoreRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class MenuServiceTest {
+    @InjectMocks
+    private MenuService menuService;
+
+    @Mock
+    private MenuRepository menuRepository;
+    @Mock
+    private OptionRepository optionRepository;
+    @Mock
+    private StoreRepository storeRepository;
+
+    private UUID storeId;
+    private UUID menuId;
+    private Store store;
+    private Menu menu;
+
+    @BeforeEach
+    void setUp() {
+        storeId = UUID.randomUUID();
+        menuId = UUID.randomUUID();
+
+        store = mock(Store.class);
+        lenient().when(store.getId()).thenReturn(storeId);
+
+        menu = mock(Menu.class);
+        lenient().when(menu.getId()).thenReturn(menuId);
+        lenient().when(menu.getStore()).thenReturn(store);
+        lenient().when(menu.getName()).thenReturn("김치찌개");
+        lenient().when(menu.getPrice()).thenReturn(9000);
+        lenient().when(menu.getDescription()).thenReturn("맛있는 김치찌개");
+        lenient().when(menu.isHidden()).thenReturn(false);
+        lenient().when(menu.getCreatedAt()).thenReturn(LocalDateTime.now());
+        lenient().when(menu.getCreatedBy()).thenReturn("owner1");
+    }
+
+    @Test
+    @DisplayName("메뉴 등록 성공")
+    void createMenu() {
+        // given
+        CreateMenuDto request = new CreateMenuDto();
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        when(menuRepository.save(any(Menu.class))).thenReturn(menu);
+
+        // when
+        ResponseMenuDto response = menuService.createMenu(storeId, request, null);
+
+        // then
+        assertThat(response).isNotNull();
+        verify(menuRepository, times(1)).save(any(Menu.class));
+    }
+
+    @Test
+    @DisplayName("메뉴 목록 조회 성공")
+    void getMenus() {
+        // given
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Menu> menuPage = new PageImpl<>(List.of(menu));
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        when(menuRepository.findByStoreIdAndIsHiddenFalseAndDeletedAtIsNull(storeId, pageable)).thenReturn(menuPage);
+
+        // when
+        Page<ResponseMenuListDto> response = menuService.getMenus(storeId, pageable, false);
+
+        // then
+        assertThat(response.getContent()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("메뉴 단건 조회 성공")
+    void getMenu() {
+        // given
+        when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
+        when(optionRepository.findByMenuIdAndDeletedAtIsNull(menuId)).thenReturn(List.of());
+
+        // when
+        ResponseMenuDto response = menuService.getMenu(menuId);
+
+        // then
+        assertThat(response).isNotNull();
+    }
+
+    @Test
+    @DisplayName("메뉴 수정 성공")
+    void updateMenu() {
+        // given
+        UpdateMenuDto request = new UpdateMenuDto();
+        when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
+        when(optionRepository.findByMenuIdAndDeletedAtIsNull(menuId)).thenReturn(List.of());
+
+        // when
+        ResponseMenuDto response = menuService.updateMenu(menuId, request, null);
+
+        // then
+        assertThat(response).isNotNull();
+        verify(menu, times(1)).update(request.getName(), request.getPrice(), request.getDescription());
+    }
+
+    @Test
+    @DisplayName("메뉴 숨김 처리 성공")
+    void updateMenuHidden() {
+        // given
+        HiddenMenuDto request = new HiddenMenuDto(true);
+        when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
+
+        // when
+        menuService.updateMenuHidden(menuId, request, null);
+
+        // then
+        verify(menu, times(1)).updateHidden(request.getIsHidden());
+    }
+
+    @Test
+    @DisplayName("메뉴 삭제 성공")
+    void deleteMenu() {
+        // given
+        when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
+
+        // when
+        menuService.deleteMenu(menuId, null);
+
+        // then
+        verify(menu, times(1)).softDelete(null);
+    }
+}
