@@ -21,6 +21,7 @@ import java.util.Map;
 @Slf4j
 public class AiService {
     private final AiLogRepository aiLogRepository;
+    private final RestClient restClient;
 
     @Value("${gemini.api.key}")
     private String geminiApiKey;
@@ -30,9 +31,11 @@ public class AiService {
     private static final String SUFFIX_PROMPT =  " 배달음식 플랫폼의 메뉴 소개글처럼 작성하고, 고객이 바로 이해할 수 있게 자연스럽고 간결한 한 줄로 50자 이하로 답변해줘.";
 
     public String generateDescription(String userId, String prompt) {
+        if (prompt.length() > 100) {
+            throw new BusinessException(ErrorCode.AI_PROMPT_TOO_LONG);
+        }
         String fullPrompt = prompt + SUFFIX_PROMPT;
 
-        RestClient restClient = RestClient.create();
 
         Map<String, Object> requestBody = Map.of(
                 "contents", List.of(
