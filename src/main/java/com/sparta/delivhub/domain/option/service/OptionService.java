@@ -9,8 +9,6 @@ import com.sparta.delivhub.domain.option.dto.ResponseOptionDto;
 import com.sparta.delivhub.domain.option.dto.UpdateOptionDto;
 import com.sparta.delivhub.domain.option.entity.Option;
 import com.sparta.delivhub.domain.option.repository.OptionRepository;
-import com.sparta.delivhub.domain.user.entity.User;
-import com.sparta.delivhub.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
-import static com.sparta.delivhub.domain.user.entity.UserRole.OWNER;
 
 @Service
 @RequiredArgsConstructor
@@ -57,7 +54,9 @@ public class OptionService {
 
     // 옵션 수정
     @Transactional
-    public ResponseOptionDto updateOption(UUID menuId, UUID optionId, UpdateOptionDto request, String username) {
+    public ResponseOptionDto updateOption(
+            UUID menuId, UUID optionId, UpdateOptionDto request, String username
+    ) {
         menuRepository.findByIdAndDeletedAtIsNull(menuId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MENU_NOT_FOUND_ON_OPTION_READ));
 
