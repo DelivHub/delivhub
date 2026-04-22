@@ -3,10 +3,7 @@ package com.sparta.delivhub.domain.payment.entity;
 import com.sparta.delivhub.common.entity.BaseEntity;
 import com.sparta.delivhub.domain.order.entity.Order;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.SQLRestriction;
 import java.util.UUID;
 
@@ -14,6 +11,7 @@ import java.util.UUID;
 @Table(name = "p_payment")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 // 조회 시 삭제되지 않은(deleted_at IS NULL) 데이터만 가져옴
 @SQLRestriction("deleted_at IS NULL")
 public class Payment extends BaseEntity {
