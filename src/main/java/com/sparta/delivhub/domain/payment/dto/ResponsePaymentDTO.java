@@ -2,14 +2,12 @@ package com.sparta.delivhub.domain.payment.dto;
 
 import com.sparta.delivhub.domain.payment.entity.Payment;
 
-import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
-@Builder
 public class ResponsePaymentDTO {
     private UUID paymentId;
     private UUID orderId;

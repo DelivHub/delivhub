@@ -12,7 +12,6 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-
 // 조회 시 삭제되지 않은(deleted_at IS NULL) 데이터만 가져옴
 @SQLRestriction("deleted_at IS NULL")
 public class Payment extends BaseEntity {
