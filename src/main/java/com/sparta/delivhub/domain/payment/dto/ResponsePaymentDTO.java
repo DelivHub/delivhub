@@ -13,7 +13,7 @@ import java.util.UUID;
 public class ResponsePaymentDTO {
     private UUID paymentId;
     private UUID orderId;
-    private Integer amount;
+    private Long amount;
     private String status;
     private LocalDateTime createdAt;
 
