@@ -2,6 +2,7 @@ package com.sparta.delivhub.domain.menu.service;
 
 import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
+import com.sparta.delivhub.domain.ai.service.AiService;
 import com.sparta.delivhub.domain.menu.dto.CreateMenuDto;
 import com.sparta.delivhub.domain.menu.dto.HiddenMenuDto;
 import com.sparta.delivhub.domain.menu.dto.ResponseMenuDto;
@@ -32,6 +33,7 @@ public class MenuService {
     private final MenuRepository menuRepository;
     private final OptionRepository optionRepository;
     private final StoreRepository storeRepository;
+    private final AiService aiService;
 
     // 메뉴 등록
     @Transactional
@@ -43,9 +45,10 @@ public class MenuService {
 
         // AI 설명 생성
         if (Boolean.TRUE.equals(request.getAiDescription())) {
-            String aiPrompt = request.getAiPrompt() + " 50자 이하로";
-            // 추후 AiService 주입 후 구현
-            // description = aiService.generateDescription(username, request.getAiPrompt());
+            if (request.getAiPrompt() == null || request.getAiPrompt().isBlank()) {
+                throw new BusinessException(ErrorCode.AI_PROMPT_REQUIRED);
+            }
+            description = aiService.generateDescription(username, request.getAiPrompt());
         }
 
         Menu menu = Menu.builder()

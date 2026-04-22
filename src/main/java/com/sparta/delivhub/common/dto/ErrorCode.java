@@ -148,7 +148,8 @@ public enum ErrorCode {
     // 13. AI Log (AI 시스템 로직)
     AI_LOG_FORBIDDEN(HttpStatus.FORBIDDEN, "AI001", "AI 로그 접근은 관리자(MANAGER, MASTER)만 가능합니다."),
     AI_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "AI002", "존재하지 않는 AI 로그입니다."),
-    AI_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI003", "AI 응답을 받지 못했습니다.");
+    AI_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI003", "AI 응답을 받지 못했습니다."),
+    AI_PROMPT_REQUIRED(HttpStatus.BAD_REQUEST, "AI004", "AI 설명 생성을 위해 프롬프트를 입력해야 합니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
