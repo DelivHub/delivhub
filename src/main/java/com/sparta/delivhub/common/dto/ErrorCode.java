@@ -121,8 +121,13 @@ public enum ErrorCode {
     STORE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P003", "해당 가게의 관리자(MANAGER) 또는 마스터(MASTER) 권한이 필요합니다."),
     PAYMENT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P004", "본인이 작성한 결제 내역만 상태를 변경할 수 있습니다."),
 
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "P005","해당 주문을 찾을 수 없습니다."),
+    PAYMENT_ALREADY_EXISTS(HttpStatus.BAD_REQUEST,"P006", "이미 결제가 완료된 주문입니다."),
+    INVALID_PAYMENT_METHOD(HttpStatus.BAD_REQUEST,"P007", "지원하지 않는 결제 수단입니다."),
+    CANNOT_PAY_OWN_STORE(HttpStatus.FORBIDDEN, "P008","본인이 운영하는 가게의 주문은 스스로 결제할 수 없습니다."),
+
     // 가게 식별자 에러 (기존 STORE_NOT_FOUND가 있지만 요청하신 메시지로 새로 생성)
-    PAYMENT_STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "P005", "해당 storeId가 존재하지 않거나, 이미 삭제된 가게입니다."),
+    PAYMENT_STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "P015", "해당 storeId가 존재하지 않거나, 이미 삭제된 가게입니다."),
 
     // 12. Review (리뷰 로직)
     REVIEW_VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "R001", "별점은 1점 이상 5점 이하로 입력해주세요."),

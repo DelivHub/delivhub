@@ -38,6 +38,9 @@ dependencies {
 
 	//JUnit 5, Mockito, AssertJ
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+	// Validation 추가
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
 }
 
 tasks.named('test') {

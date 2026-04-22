@@ -1,6 +1,7 @@
 package com.sparta.delivhub.domain.order.repository;
 
 import com.sparta.delivhub.domain.order.entity.Order;
+<<<<<<< HEAD
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,4 +26,11 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     // MANAGER/MASTER용: 전체 조회
     Page<Order> findAllByDeletedAtIsNull(Pageable pageable);
+=======
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.UUID;
+
+public interface OrderRepository extends JpaRepository<Order, UUID> {
+>>>>>>> develop
 }
