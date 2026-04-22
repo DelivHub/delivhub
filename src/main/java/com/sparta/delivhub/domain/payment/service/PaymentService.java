@@ -10,9 +10,9 @@ import com.sparta.delivhub.domain.payment.entity.Payment;
 import com.sparta.delivhub.domain.payment.entity.PaymentMethod;
 import com.sparta.delivhub.domain.payment.entity.PaymentStatus;
 import com.sparta.delivhub.domain.payment.repository.PaymentRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -74,6 +74,26 @@ public class PaymentService {
 
         // 7. DTO로 변환
         return new ResponsePaymentDTO(savedPayment);
+    }
+
+    @Transactional(readOnly = true)
+    public ResponsePaymentDTO getPayment(UUID paymentId, String currentUserId, String userRole) {
+        // 1. 결제 내역 조회
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
+
+        // 2. 권한 검증
+        // CUSTOMER(일반 고객)인 경우, 반드시 자신의 결제 내역만 조회할 수 있어야 합니다.
+        // MANAGER나 MASTER는 모든 결제 내역을 조회할 수 있도록 예외를 둡니다.
+        if ("CUSTOMER".equals(userRole)) {
+            String ownerId = payment.getOrder().getUserId();
+            if (!ownerId.equals(currentUserId)) {
+                throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
+            }
+        }
+
+        // 3. DTO 변환 및 반환
+        return new ResponsePaymentDTO(payment);
     }
 
 

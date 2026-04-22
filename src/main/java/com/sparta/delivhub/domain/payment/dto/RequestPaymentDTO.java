@@ -3,11 +3,14 @@ package com.sparta.delivhub.domain.payment.dto;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.UUID;
-
+@Builder // 👈 빌더 패턴(builder())을 사용하기 위해 추가!
+@AllArgsConstructor // 👈 @Builder를 @NoArgsConstructor와 함께 쓰려면 필수!
 @Getter
 @NoArgsConstructor // 역직렬화(JSON -> 객체 변환)를 위해 기본 생성자가 필수입니다.
 public class RequestPaymentDTO {
@@ -30,4 +33,6 @@ public class RequestPaymentDTO {
      * 단, 서비스 로직에서는 이 값을 무시하고 무조건 PaymentStatus.COMPLETED 로 덮어씌워 저장해야 합니다.
      */
     private String status;
+
+
 }
