@@ -1,5 +1,7 @@
 package com.sparta.delivhub.domain.auth.service;
 
+import com.sparta.delivhub.domain.auth.dto.LoginRequest;
+import com.sparta.delivhub.domain.auth.dto.LoginResponse;
 import com.sparta.delivhub.domain.auth.dto.SignupRequest;
 import com.sparta.delivhub.domain.auth.dto.SignupResponse;
 import com.sparta.delivhub.domain.user.entity.User;
@@ -13,6 +15,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -62,6 +66,35 @@ class AuthServiceTest {
         assertThat(response.getNickname()).isEqualTo("홍길동");
         assertThat(response.getRole()).isEqualTo(UserRole.CUSTOMER);
         verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("로그인_성공")
+    void login_success() {
+        //given
+        User user = User.builder()
+                .username("user01")
+                .password("encodedPassword")
+                .userRole(UserRole.CUSTOMER)
+                .build();
+
+
+        LoginRequest request = LoginRequest.builder()
+                .username("user01")
+                .password("Password1!")
+                .build();
+
+        given(userRepository.findByUsername("user01")).willReturn(Optional.of(user));
+        given(passwordEncoder.matches("Password1!", user.getPassword())).willReturn(true);
+        given(jwtTokenProvider.createAccessToken(eq("user01"), anyList())).willReturn("access-token");
+
+        //when
+        LoginResponse response = authService.login(request);
+
+        //then
+        assertThat(response.getAccessToken()).isEqualTo("access-token");
+        assertThat(response.getUsername()).isEqualTo("user01");
+        assertThat(response.getRole()).isEqualTo(UserRole.CUSTOMER);
     }
 
 
