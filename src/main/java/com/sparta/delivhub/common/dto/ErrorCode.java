@@ -13,6 +13,7 @@ public enum ErrorCode {
     INVALID_INPUT_DATA(HttpStatus.BAD_REQUEST, "C002", "입력 데이터가 올바르지 않습니다."),
     REQUIRED_FIELD_MISSING(HttpStatus.BAD_REQUEST, "C003", "필수 입력값이 누락되었습니다."),
     NO_CHANGES_DETECTED(HttpStatus.BAD_REQUEST, "C004", "변경할 내용이 없습니다."),
+    INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "C005", "페이징 size는 10, 30, 50만 허용됩니다."),
     SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C500", "서버 내부 오류가 발생했습니다."),
 
     // 2. User (회원 및 검증 로직)
@@ -81,7 +82,6 @@ public enum ErrorCode {
     MENU_NOT_FOUND_ON_UPDATE_STATUS(HttpStatus.NOT_FOUND, "M008", "존재하지 않는 메뉴입니다."),
     MENU_FORBIDDEN_ON_DELETE(HttpStatus.FORBIDDEN, "M009", "본인 가게의 메뉴만 삭제할 수 있습니다."),
     MENU_NOT_FOUND_ON_DELETE(HttpStatus.NOT_FOUND, "M010", "존재하지 않는 메뉴입니다."),
-    MENU_INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "M011", "페이징 size는 10, 30, 50만 허용됩니다."),
 
     // 9. Option (옵션 로직)
     OPTION_VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "OP001", "누락된 값이 있습니다."),
@@ -148,7 +148,9 @@ public enum ErrorCode {
     // 13. AI Log (AI 시스템 로직)
     AI_LOG_FORBIDDEN(HttpStatus.FORBIDDEN, "AI001", "AI 로그 접근은 관리자(MANAGER, MASTER)만 가능합니다."),
     AI_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "AI002", "존재하지 않는 AI 로그입니다."),
-    AI_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI003", "AI 응답을 받지 못했습니다.");
+    AI_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI003", "AI 응답을 받지 못했습니다."),
+    AI_PROMPT_REQUIRED(HttpStatus.BAD_REQUEST, "AI004", "AI 설명 생성을 위해 프롬프트를 입력해야 합니다."),
+    AI_PROMPT_TOO_LONG(HttpStatus.BAD_REQUEST, "AI005", "AI 프롬프트는 100자 이하여야 합니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
