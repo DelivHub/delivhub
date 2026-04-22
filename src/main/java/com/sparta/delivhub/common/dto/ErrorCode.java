@@ -16,7 +16,7 @@ public enum ErrorCode {
     SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C500", "서버 내부 오류가 발생했습니다."),
 
     // 2. User (회원 및 검증 로직)
-    INVALID_USERNAME(HttpStatus.BAD_REQUEST, "U001", "유효하지 않은 사용자 이름입니다."),
+    DUPLICATE_USERNAME(HttpStatus.BAD_REQUEST, "U001", "이미 사용 중인 유저네임입니다."),
     INVALID_EMAIL_FORMAT(HttpStatus.BAD_REQUEST, "U002", "이메일 형식이 올바르지 않습니다."),
     INVALID_PASSWORD_FORMAT(HttpStatus.BAD_REQUEST, "U003", "비밀번호 형식이 올바르지 않습니다."),
     PASSWORD_SAME_AS_CURRENT(HttpStatus.BAD_REQUEST, "U004", "새 비밀번호가 현재 비밀번호와 동일합니다."),
@@ -24,7 +24,6 @@ public enum ErrorCode {
     DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST, "U006", "이미 사용 중인 닉네임입니다."),
     INVALID_ROLE(HttpStatus.BAD_REQUEST, "U007", "유효하지 않은 권한(Role) 값입니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U008", "사용자를 찾을 수 없습니다."),
-    ALREADY_DELETED_USER(HttpStatus.NOT_FOUND, "U009", "이미 탈퇴 처리된 사용자입니다."),
 
     // 3. Auth & Permission (인증 및 인가)
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "A001", "유효하지 않은 토큰입니다."),
@@ -33,6 +32,8 @@ public enum ErrorCode {
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "A004", "해당 작업을 수행할 권한이 없습니다."),
     MASTER_ONLY(HttpStatus.FORBIDDEN, "A005", "MASTER 권한만 접근할 수 있습니다."),
     CANNOT_CHANGE_OWN_ROLE(HttpStatus.FORBIDDEN, "A006", "자신의 권한은 스스로 변경할 수 없습니다."),
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "A007", "아이디 또는 비밀번호가 일치하지 않습니다."),
+    DEACTIVATED_ACCOUNT(HttpStatus.FORBIDDEN, "A008", "탈퇴한 계정입니다."),
 
     // 4. Address (주소 로직)
     INVALID_ADDRESSID(HttpStatus.BAD_REQUEST, "AD001", "유효하지 않은 주소 ID입니다."),
@@ -80,6 +81,7 @@ public enum ErrorCode {
     MENU_NOT_FOUND_ON_UPDATE_STATUS(HttpStatus.NOT_FOUND, "M008", "존재하지 않는 메뉴입니다."),
     MENU_FORBIDDEN_ON_DELETE(HttpStatus.FORBIDDEN, "M009", "본인 가게의 메뉴만 삭제할 수 있습니다."),
     MENU_NOT_FOUND_ON_DELETE(HttpStatus.NOT_FOUND, "M010", "존재하지 않는 메뉴입니다."),
+    MENU_INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "M011", "페이징 size는 10, 30, 50만 허용됩니다."),
 
     // 9. Option (옵션 로직)
     OPTION_VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "OP001", "누락된 값이 있습니다."),
@@ -121,8 +123,13 @@ public enum ErrorCode {
     STORE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P003", "해당 가게의 관리자(MANAGER) 또는 마스터(MASTER) 권한이 필요합니다."),
     PAYMENT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P004", "본인이 작성한 결제 내역만 상태를 변경할 수 있습니다."),
 
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "P005","해당 주문을 찾을 수 없습니다."),
+    PAYMENT_ALREADY_EXISTS(HttpStatus.BAD_REQUEST,"P006", "이미 결제가 완료된 주문입니다."),
+    INVALID_PAYMENT_METHOD(HttpStatus.BAD_REQUEST,"P007", "지원하지 않는 결제 수단입니다."),
+    CANNOT_PAY_OWN_STORE(HttpStatus.FORBIDDEN, "P008","본인이 운영하는 가게의 주문은 스스로 결제할 수 없습니다."),
+
     // 가게 식별자 에러 (기존 STORE_NOT_FOUND가 있지만 요청하신 메시지로 새로 생성)
-    PAYMENT_STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "P005", "해당 storeId가 존재하지 않거나, 이미 삭제된 가게입니다."),
+    PAYMENT_STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "P015", "해당 storeId가 존재하지 않거나, 이미 삭제된 가게입니다."),
 
     // 12. Review (리뷰 로직)
     REVIEW_VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "R001", "별점은 1점 이상 5점 이하로 입력해주세요."),
