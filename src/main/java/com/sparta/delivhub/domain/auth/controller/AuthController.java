@@ -29,7 +29,7 @@ public class AuthController {
         SignupResponse response = authService.signup(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(response));
+                .body(ApiResponse.created(response));
     }
 
     @PostMapping("/login")
