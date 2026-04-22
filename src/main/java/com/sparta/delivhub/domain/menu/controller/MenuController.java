@@ -1,7 +1,13 @@
 package com.sparta.delivhub.domain.menu.controller;
 
 import com.sparta.delivhub.common.dto.ApiResponse;
-import com.sparta.delivhub.domain.menu.dto.*;
+import com.sparta.delivhub.common.dto.BusinessException;
+import com.sparta.delivhub.common.dto.ErrorCode;
+import com.sparta.delivhub.domain.menu.dto.CreateMenuDto;
+import com.sparta.delivhub.domain.menu.dto.HiddenMenuDto;
+import com.sparta.delivhub.domain.menu.dto.ResponseMenuDto;
+import com.sparta.delivhub.domain.menu.dto.ResponseMenuListDto;
+import com.sparta.delivhub.domain.menu.dto.UpdateMenuDto;
 import com.sparta.delivhub.domain.menu.service.MenuService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -38,8 +44,14 @@ public class MenuController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt,DESC") String sort) {
+        if (size != 10 && size != 30 && size != 50) {
+            throw new BusinessException(ErrorCode.MENU_INVALID_PAGE_SIZE);
+        }
         String[] sortParams = sort.split(",");
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sortParams[1]), sortParams[0]));
+        Sort.Direction direction = sortParams.length > 1
+                ? Sort.Direction.fromString(sortParams[1])
+                : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
         Page<ResponseMenuListDto> response = menuService.getMenus(storeId, pageable, false);
         return ResponseEntity.ok(ApiResponse.success(response));
     }

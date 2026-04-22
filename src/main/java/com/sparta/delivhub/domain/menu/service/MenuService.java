@@ -2,7 +2,11 @@ package com.sparta.delivhub.domain.menu.service;
 
 import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
-import com.sparta.delivhub.domain.menu.dto.*;
+import com.sparta.delivhub.domain.menu.dto.CreateMenuDto;
+import com.sparta.delivhub.domain.menu.dto.HiddenMenuDto;
+import com.sparta.delivhub.domain.menu.dto.ResponseMenuDto;
+import com.sparta.delivhub.domain.menu.dto.ResponseMenuListDto;
+import com.sparta.delivhub.domain.menu.dto.UpdateMenuDto;
 import com.sparta.delivhub.domain.menu.entity.Menu;
 import com.sparta.delivhub.domain.menu.repository.MenuRepository;
 import com.sparta.delivhub.domain.option.dto.CreateOptionDto;
@@ -39,6 +43,7 @@ public class MenuService {
 
         // AI 설명 생성
         if (Boolean.TRUE.equals(request.getAiDescription())) {
+            String aiPrompt = request.getAiPrompt() + " 50자 이하로";
             // 추후 AiService 주입 후 구현
             // description = aiService.generateDescription(username, request.getAiPrompt());
         }
@@ -61,9 +66,9 @@ public class MenuService {
                         .name(optionDto.getName())
                         .extraPrice(optionDto.getExtraPrice())
                         .build();
-                optionRepository.save(option);
                 options.add(option);
             }
+            optionRepository.saveAll(options);
         }
 
         List<ResponseOptionDto> optionDtos = options.stream()
