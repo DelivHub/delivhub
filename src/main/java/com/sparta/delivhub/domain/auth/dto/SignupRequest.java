@@ -3,9 +3,11 @@ package com.sparta.delivhub.domain.auth.dto;
 import com.sparta.delivhub.domain.user.entity.UserRole;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import lombok.Builder;
 import lombok.Getter;
 
 @Getter
+@Builder
 public class SignupRequest {
 
     @NotBlank(message = "아이디는 필수입니다.")
@@ -32,5 +34,6 @@ public class SignupRequest {
     )
     private String email;
 
+    @Builder.Default
     private UserRole role = UserRole.CUSTOMER;
 }
