@@ -21,4 +21,9 @@ public class ApiResponse<T> {
     public static ApiResponse<Void> success() {
         return new ApiResponse<>(200, "SUCCESS", null);
     }
+
+    // 생성 성공 응답 (201 Created)
+    public static <T> ApiResponse<T> created(T data) {
+        return new ApiResponse<>(201, "SUCCESS", data);
+    }
 }
