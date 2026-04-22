@@ -7,6 +7,7 @@ import com.sparta.delivhub.domain.option.dto.UpdateOptionDto;
 import com.sparta.delivhub.domain.option.service.OptionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +26,8 @@ public class OptionController {
             @PathVariable UUID menuId,
             @Valid @RequestBody CreateOptionDto request) {
         ResponseOptionDto response = optionService.createOption(menuId, request, null);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response));
     }
 
     // 옵션 목록 조회
