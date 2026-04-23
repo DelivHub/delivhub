@@ -5,6 +5,7 @@ import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.domain.order.entity.Order;
 import com.sparta.delivhub.domain.order.entity.OrderStatus;
 import com.sparta.delivhub.domain.order.repository.OrderRepository;
+import com.sparta.delivhub.domain.review.dto.MyReviewListResponseDto;
 import com.sparta.delivhub.domain.review.dto.ReviewRequestDto;
 import com.sparta.delivhub.domain.review.dto.ReviewResponseDto;
 import com.sparta.delivhub.domain.review.entity.Review;
@@ -13,9 +14,11 @@ import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.store.repository.StoreRepository;
 import com.sparta.delivhub.domain.user.entity.User;
 import com.sparta.delivhub.domain.user.repository.UserRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -73,5 +76,23 @@ public class ReviewService {
 
         // 7. DTO로 변환하여 반환
         return new ReviewResponseDto(savedReview);
+    }
+
+    /**
+     * 내 리뷰 목록 조회 (페이징)
+     */
+    @Transactional(readOnly = true) // 단순 조회용이므로 성능 최적화를 위해 readOnly 적용
+    public MyReviewListResponseDto getMyReviews(String currentUserId, String userRole, Pageable pageable) {
+
+        // 1. 권한 검사 (CUSTOMER 만 조회 가능)
+        if (!"CUSTOMER".equals(userRole)) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+
+        // 2. DB에서 페이징된 리뷰 데이터 가져오기
+        Page<Review> reviewPage = reviewRepository.findAllByUserId(currentUserId, pageable);
+
+        // 3. DTO로 묶어서 반환
+        return new MyReviewListResponseDto(currentUserId, reviewPage);
     }
 }
