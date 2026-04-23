@@ -2,6 +2,7 @@ package com.sparta.delivhub.domain.menu.service;
 
 import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
+import com.sparta.delivhub.common.util.AuthorizationUtils;
 import com.sparta.delivhub.domain.ai.service.AiService;
 import com.sparta.delivhub.domain.menu.dto.CreateMenuDto;
 import com.sparta.delivhub.domain.menu.dto.HiddenMenuDto;
@@ -16,6 +17,8 @@ import com.sparta.delivhub.domain.option.entity.Option;
 import com.sparta.delivhub.domain.option.repository.OptionRepository;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.store.repository.StoreRepository;
+import com.sparta.delivhub.domain.user.entity.User;
+import com.sparta.delivhub.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +36,7 @@ public class MenuService {
     private final MenuRepository menuRepository;
     private final OptionRepository optionRepository;
     private final StoreRepository storeRepository;
+    private final UserRepository userRepository;
     private final AiService aiService;
 
     // 메뉴 등록
@@ -40,10 +44,14 @@ public class MenuService {
     public ResponseMenuDto createMenu(UUID storeId, CreateMenuDto request, String username) {
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORE_NOT_FOUND));
+        User user = userRepository.findByUsernameAndDeletedAtIsNull(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        String description = request.getDescription();
+        // 권한 확인
+        AuthorizationUtils.checkOwnerOrAdminPermission(user, store.getOwner().getUsername());
 
         // AI 설명 생성
+        String description = request.getDescription();
         if (Boolean.TRUE.equals(request.getAiDescription())) {
             if (request.getAiPrompt() == null || request.getAiPrompt().isBlank()) {
                 throw new BusinessException(ErrorCode.AI_PROMPT_REQUIRED);
@@ -114,7 +122,13 @@ public class MenuService {
     public ResponseMenuDto updateMenu(UUID menuId, UpdateMenuDto request, String username) {
         Menu menu = menuRepository.findByIdAndDeletedAtIsNull(menuId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MENU_NOT_FOUND_ON_UPDATE));
+        User user = userRepository.findByUsernameAndDeletedAtIsNull(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        // 권한 확인
+        AuthorizationUtils.checkOwnerOrAdminPermission(user, menu.getStore().getOwner().getUsername());
+
+        // 수정
         menu.update(request.getName(), request.getPrice(), request.getDescription());
 
         List<ResponseOptionDto> options = optionRepository.findByMenuIdAndDeletedAtIsNull(menuId)
@@ -130,6 +144,11 @@ public class MenuService {
     public void updateMenuHidden(UUID menuId, HiddenMenuDto request, String username) {
         Menu menu = menuRepository.findByIdAndDeletedAtIsNull(menuId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MENU_NOT_FOUND_ON_UPDATE_STATUS));
+        User user = userRepository.findByUsernameAndDeletedAtIsNull(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 권한 확인
+        AuthorizationUtils.checkOwnerOrAdminPermission(user, menu.getStore().getOwner().getUsername());
 
         menu.updateHidden(request.getIsHidden());
     }
@@ -139,6 +158,11 @@ public class MenuService {
     public void deleteMenu(UUID menuId, String username) {
         Menu menu = menuRepository.findByIdAndDeletedAtIsNull(menuId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MENU_NOT_FOUND_ON_DELETE));
+        User user = userRepository.findByUsernameAndDeletedAtIsNull(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 권한 확인
+        AuthorizationUtils.checkOwnerOrAdminPermission(user, menu.getStore().getOwner().getUsername());
 
         menu.softDelete(username);
     }
