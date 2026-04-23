@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
-import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -71,7 +70,7 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("회원가입_실패_중복 username")
+    @DisplayName("회원가입_실패_중복_username")
     void signup_fail_duplicateUsername() {
         //given
         SignupRequest request = SignupRequest.builder()
@@ -85,14 +84,14 @@ class AuthServiceTest {
         given(userRepository.existsByUsername("user01")).willReturn(true);
 
         //when & then
-        assertThatThrownBy(()->authService.signup(request))
+        assertThatThrownBy(() -> authService.signup(request))
                 .isInstanceOf(BusinessException.class)
-                .extracting(e->((BusinessException) e).getErrorCode())
+                .extracting(e -> ((BusinessException) e).getErrorCode())
                 .isEqualTo(ErrorCode.DUPLICATE_USERNAME);
     }
 
     @Test
-    @DisplayName("회원가입_실패_중복 email")
+    @DisplayName("회원가입_실패_중복_email")
     void signup_fail_duplicateEmail() {
         //given
         SignupRequest request = SignupRequest.builder()
@@ -106,9 +105,9 @@ class AuthServiceTest {
         given(userRepository.existsByEmail("user01@example.com")).willReturn(true);
 
         //when & then
-        assertThatThrownBy(()->authService.signup(request))
+        assertThatThrownBy(() -> authService.signup(request))
                 .isInstanceOf(BusinessException.class)
-                .extracting(e->((BusinessException) e).getErrorCode())
+                .extracting(e -> ((BusinessException) e).getErrorCode())
                 .isEqualTo(ErrorCode.DUPLICATE_EMAIL);
     }
 
@@ -121,7 +120,6 @@ class AuthServiceTest {
                 .password("encodedPassword")
                 .userRole(UserRole.CUSTOMER)
                 .build();
-
 
         LoginRequest request = LoginRequest.builder()
                 .username("user01")
@@ -141,7 +139,71 @@ class AuthServiceTest {
         assertThat(response.getRole()).isEqualTo(UserRole.CUSTOMER);
     }
 
+    @Test
+    @DisplayName("로그인_실패_존재X_유저")
+    void login_fail_userNotFound() {
+        //given
+        LoginRequest request = LoginRequest.builder()
+                .username("user01")
+                .password("Password1!")
+                .build();
 
+        given(userRepository.findByUsername("user01")).willReturn(Optional.empty());
 
+        //when & then
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.INVALID_CREDENTIALS);
+    }
 
+    @Test
+    @DisplayName("로그인_실패_탈퇴_계정")
+    void login_fail_deactivatedAccount() {
+        //given
+        User user = User.builder()
+                .username("user01")
+                .password("encodedPassword")
+                .userRole(UserRole.CUSTOMER)
+                .build();
+
+        user.softDelete("admin");
+
+        LoginRequest request = LoginRequest.builder()
+                .username("user01")
+                .password("Password1!")
+                .build();
+
+        given(userRepository.findByUsername("user01")).willReturn(Optional.of(user));
+
+        //when & then
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.DEACTIVATED_ACCOUNT);
+    }
+
+    @Test
+    @DisplayName("로그인_실패_비밀번호_불일치")
+    void login_fail_wrongPassword() {
+        //given
+        User user = User.builder()
+                .username("user01")
+                .password("encodedPassword")
+                .userRole(UserRole.CUSTOMER)
+                .build();
+
+        LoginRequest request = LoginRequest.builder()
+                .username("user01")
+                .password("Password1!")
+                .build();
+
+        given(userRepository.findByUsername("user01")).willReturn(Optional.of(user));
+        given(passwordEncoder.matches("Password1!", user.getPassword())).willReturn(false);
+        //when & then
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.INVALID_CREDENTIALS);
+    }
 }
