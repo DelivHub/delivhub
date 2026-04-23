@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.parameters.P;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
@@ -22,8 +21,9 @@ import java.util.UUID;
 public class PaymentController {
 
     private final PaymentService paymentService;
-
-    // 결제 내역 생성
+    /**
+     * 결제 내역 생성 (user)
+     */
     @PostMapping
     public ResponseEntity<ApiResponse<ResponsePaymentDTO>> createPayment(
             @Valid @RequestBody RequestPaymentDTO request,
@@ -35,8 +35,9 @@ public class PaymentController {
         // 2. API 명세서의 공통 응답 규격 맞추기
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(responseData));
     }
-
-    // 결제 상세 조회 paymentId 로 조회
+    /**
+     * 결제 상세 조회 (paymentId 로 조회)
+     */
     @GetMapping("/{paymentId}")
     public ResponseEntity<ApiResponse<ResponsePaymentDTO>> getPayment(
             @PathVariable UUID paymentId,
@@ -49,8 +50,7 @@ public class PaymentController {
 
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responseData));
     }
-    
-    // 결제 상태 수정
+
     /**
      * 결제 상태 수정 (관리자 전용)
      */
@@ -71,9 +71,11 @@ public class PaymentController {
         );
 
         // 3. 공통 응답 규격 반환 (200 OK)
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(responseData));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responseData));
     }
-    // 결제 내역 삭제 (소프트)
+    /**
+     * 결제 내역 삭제 (소프트)
+     */
     @DeleteMapping("/{paymentId}")
     public ResponseEntity<ApiResponse<Void>> deletePayment(
             @PathVariable UUID paymentId,
