@@ -120,13 +120,7 @@ public class MenuService {
     // 메뉴 수정
     @Transactional
     public ResponseMenuDto updateMenu(UUID menuId, UpdateMenuDto request, String username) {
-        Menu menu = menuRepository.findByIdAndDeletedAtIsNull(menuId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MENU_NOT_FOUND_ON_UPDATE));
-        User user = userRepository.findByUsernameAndDeletedAtIsNull(username)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-        // 권한 확인
-        AuthorizationUtils.checkOwnerOrAdminPermission(user, menu.getStore().getOwner().getUsername());
+        Menu menu = getMenuAndCheckPermission(menuId, username, ErrorCode.MENU_NOT_FOUND_ON_UPDATE);
 
         // 수정
         menu.update(request.getName(), request.getPrice(), request.getDescription());
@@ -142,28 +136,26 @@ public class MenuService {
     // 메뉴 숨김 처리
     @Transactional
     public void updateMenuHidden(UUID menuId, HiddenMenuDto request, String username) {
-        Menu menu = menuRepository.findByIdAndDeletedAtIsNull(menuId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MENU_NOT_FOUND_ON_UPDATE_STATUS));
-        User user = userRepository.findByUsernameAndDeletedAtIsNull(username)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-        // 권한 확인
-        AuthorizationUtils.checkOwnerOrAdminPermission(user, menu.getStore().getOwner().getUsername());
-
+        Menu menu = getMenuAndCheckPermission(menuId, username, ErrorCode.MENU_NOT_FOUND_ON_UPDATE_STATUS);
         menu.updateHidden(request.getIsHidden());
     }
 
     // 메뉴 삭제
     @Transactional
     public void deleteMenu(UUID menuId, String username) {
+        Menu menu = getMenuAndCheckPermission(menuId, username, ErrorCode.MENU_NOT_FOUND_ON_DELETE);
+        menu.softDelete(username);
+    }
+
+    // 메뉴 조회 + 권한 체크
+    private Menu getMenuAndCheckPermission(UUID menuId, String username, ErrorCode menuNotFoundError) {
         Menu menu = menuRepository.findByIdAndDeletedAtIsNull(menuId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MENU_NOT_FOUND_ON_DELETE));
+                .orElseThrow(() -> new BusinessException(menuNotFoundError));
         User user = userRepository.findByUsernameAndDeletedAtIsNull(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // 권한 확인
         AuthorizationUtils.checkOwnerOrAdminPermission(user, menu.getStore().getOwner().getUsername());
 
-        menu.softDelete(username);
+        return menu;
     }
 }

@@ -78,6 +78,8 @@ public class OptionService {
 
         option.softDelete(username);
     }
+
+    // 메뉴 조회 + 권한 체크
     private Menu getMenuAndCheckPermission(UUID menuId, String username) {
         Menu menu = menuRepository.findByIdAndDeletedAtIsNull(menuId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MENU_NOT_FOUND_ON_OPTION));

@@ -6,6 +6,10 @@ import com.sparta.delivhub.domain.user.entity.User;
 import com.sparta.delivhub.domain.user.entity.UserRole;
 
 public class AuthorizationUtils {
+    private AuthorizationUtils() {
+        throw new IllegalStateException("Utility class");
+    }
+
     // OWNER/MANAGER/MASTER 권한 체크
     public static void checkOwnerOrAdminPermission(User user, String ownerUsername) {
         if (user.getUserRole() == UserRole.CUSTOMER) {
@@ -20,7 +24,7 @@ public class AuthorizationUtils {
     // MANAGER/MASTER 권한 체크
     public static void checkAdminPermission(User user) {
         if (user.getUserRole() != UserRole.MANAGER && user.getUserRole() != UserRole.MASTER) {
-            throw new BusinessException(ErrorCode.AI_LOG_FORBIDDEN);
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
     }
 }
