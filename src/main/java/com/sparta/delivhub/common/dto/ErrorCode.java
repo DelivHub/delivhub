@@ -86,8 +86,7 @@ public enum ErrorCode {
     // 9. Option (옵션 로직)
     OPTION_VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "OP001", "누락된 값이 있습니다."),
     OPTION_FORBIDDEN_ON_CREATE(HttpStatus.FORBIDDEN, "OP002", "본인 가게의 메뉴에만 옵션을 등록할 수 있습니다."),
-    MENU_NOT_FOUND_ON_OPTION_CREATE(HttpStatus.NOT_FOUND, "OP003", "존재하지 않는 메뉴입니다."),
-    MENU_NOT_FOUND_ON_OPTION_READ(HttpStatus.NOT_FOUND, "OP004", "존재하지 않는 메뉴입니다."),
+    MENU_NOT_FOUND_ON_OPTION(HttpStatus.NOT_FOUND, "OP003", "존재하지 않는 메뉴입니다."),
     OPTION_FORBIDDEN_ON_UPDATE(HttpStatus.FORBIDDEN, "OP005", "본인 가게의 메뉴에 속한 옵션만 수정할 수 있습니다."),
     OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "OP006", "존재하지 않는 옵션입니다."),
 

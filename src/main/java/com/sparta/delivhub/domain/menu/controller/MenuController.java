@@ -8,12 +8,14 @@ import com.sparta.delivhub.domain.menu.dto.ResponseMenuDto;
 import com.sparta.delivhub.domain.menu.dto.ResponseMenuListDto;
 import com.sparta.delivhub.domain.menu.dto.UpdateMenuDto;
 import com.sparta.delivhub.domain.menu.service.MenuService;
+import com.sparta.delivhub.security.UserDetailsImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -28,8 +30,10 @@ public class MenuController {
     @PostMapping("/stores/{storeId}/menus")
     public ResponseEntity<ApiResponse<ResponseMenuDto>> createMenu(
             @PathVariable UUID storeId,
-            @Valid @RequestBody CreateMenuDto request) {
-        ResponseMenuDto response = menuService.createMenu(storeId, request, null);
+            @Valid @RequestBody CreateMenuDto request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        ResponseMenuDto response = menuService.createMenu(storeId, request, userDetails.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response));
     }
@@ -58,8 +62,10 @@ public class MenuController {
     @PatchMapping("/menus/{menuId}")
     public ResponseEntity<ApiResponse<ResponseMenuDto>> updateMenu(
             @PathVariable UUID menuId,
-            @Valid @RequestBody UpdateMenuDto request) {
-        ResponseMenuDto response = menuService.updateMenu(menuId, request, null);
+            @Valid @RequestBody UpdateMenuDto request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        ResponseMenuDto response = menuService.updateMenu(menuId, request, userDetails.getUsername());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -67,16 +73,20 @@ public class MenuController {
     @PatchMapping("/menus/{menuId}/hidden")
     public ResponseEntity<ApiResponse<Void>> updateMenuHidden(
             @PathVariable UUID menuId,
-            @Valid @RequestBody HiddenMenuDto request) {
-        menuService.updateMenuHidden(menuId, request, null);
+            @Valid @RequestBody HiddenMenuDto request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        menuService.updateMenuHidden(menuId, request, userDetails.getUsername());
         return ResponseEntity.ok(ApiResponse.success());
     }
 
     // 메뉴 삭제
     @DeleteMapping("/menus/{menuId}")
     public ResponseEntity<ApiResponse<Void>> deleteMenu(
-            @PathVariable UUID menuId) {
-        menuService.deleteMenu(menuId, null);
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable UUID menuId
+    ) {
+        menuService.deleteMenu(menuId, userDetails.getUsername());
         return ResponseEntity.ok(ApiResponse.success());
     }
 }

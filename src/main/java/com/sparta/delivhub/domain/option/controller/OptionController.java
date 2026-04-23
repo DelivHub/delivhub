@@ -5,10 +5,12 @@ import com.sparta.delivhub.domain.option.dto.CreateOptionDto;
 import com.sparta.delivhub.domain.option.dto.ResponseOptionDto;
 import com.sparta.delivhub.domain.option.dto.UpdateOptionDto;
 import com.sparta.delivhub.domain.option.service.OptionService;
+import com.sparta.delivhub.security.UserDetailsImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,8 +26,10 @@ public class OptionController {
     @PostMapping
     public ResponseEntity<ApiResponse<ResponseOptionDto>> createOption(
             @PathVariable UUID menuId,
-            @Valid @RequestBody CreateOptionDto request) {
-        ResponseOptionDto response = optionService.createOption(menuId, request, null);
+            @Valid @RequestBody CreateOptionDto request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        ResponseOptionDto response = optionService.createOption(menuId, request, userDetails.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response));
     }
@@ -43,8 +47,10 @@ public class OptionController {
     public ResponseEntity<ApiResponse<ResponseOptionDto>> updateOption(
             @PathVariable UUID menuId,
             @PathVariable UUID optionId,
-            @Valid @RequestBody UpdateOptionDto request) {
-        ResponseOptionDto response = optionService.updateOption(menuId, optionId, request, null);
+            @Valid @RequestBody UpdateOptionDto request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        ResponseOptionDto response = optionService.updateOption(menuId, optionId, request, userDetails.getUsername());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -52,8 +58,9 @@ public class OptionController {
     @DeleteMapping("/{optionId}")
     public ResponseEntity<ApiResponse<Void>> deleteOption(
             @PathVariable UUID menuId,
-            @PathVariable UUID optionId) {
-        optionService.deleteOption(menuId, optionId, null);
+            @PathVariable UUID optionId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        optionService.deleteOption(menuId, optionId, userDetails.getUsername());
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

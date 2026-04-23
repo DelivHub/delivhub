@@ -9,6 +9,9 @@ import org.springframework.data.domain.Sort;
 import java.util.List;
 
 public class PageableUtils {
+    private PageableUtils() {
+        throw new IllegalStateException("Utility class");
+    }
 
     private static final List<Integer> ALLOWED_SIZES = List.of(10, 30, 50);
 
