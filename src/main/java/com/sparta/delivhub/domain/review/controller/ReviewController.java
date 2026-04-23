@@ -4,6 +4,7 @@ import com.sparta.delivhub.common.dto.ApiResponse;
 import com.sparta.delivhub.domain.review.dto.MyReviewListResponseDto;
 import com.sparta.delivhub.domain.review.dto.ReviewRequestDto;
 import com.sparta.delivhub.domain.review.dto.ReviewResponseDto;
+import com.sparta.delivhub.domain.review.dto.StoreReviewListResponseDto;
 import com.sparta.delivhub.domain.review.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +58,20 @@ public class ReviewController {
         MyReviewListResponseDto responseData = reviewService.getMyReviews(currentUserId, userRole, pageable);
 
         // 3. 성공 응답 (200 OK)
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responseData));
+    }
+
+    /**
+     * 모든 가게 리뷰 조회 (권한: 전체)
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<StoreReviewListResponseDto>> getAllStoreReviews(
+            @PageableDefault(size = 10, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable
+    ) {
+        // 서비스 로직 실행
+        StoreReviewListResponseDto responseData = reviewService.getAllStoreReviews(pageable);
+
+        // 성공 응답 (200 OK)
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responseData));
     }
 }

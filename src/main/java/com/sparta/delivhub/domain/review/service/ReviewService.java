@@ -8,6 +8,7 @@ import com.sparta.delivhub.domain.order.repository.OrderRepository;
 import com.sparta.delivhub.domain.review.dto.MyReviewListResponseDto;
 import com.sparta.delivhub.domain.review.dto.ReviewRequestDto;
 import com.sparta.delivhub.domain.review.dto.ReviewResponseDto;
+import com.sparta.delivhub.domain.review.dto.StoreReviewListResponseDto;
 import com.sparta.delivhub.domain.review.entity.Review;
 import com.sparta.delivhub.domain.review.repository.ReviewRepository;
 import com.sparta.delivhub.domain.store.entity.Store;
@@ -94,5 +95,18 @@ public class ReviewService {
 
         // 3. DTO로 묶어서 반환
         return new MyReviewListResponseDto(currentUserId, reviewPage);
+    }
+
+    /**
+     * 모든 가게 리뷰 조회 (전체 공개 API)
+     */
+    @Transactional(readOnly = true)
+    public StoreReviewListResponseDto getAllStoreReviews(Pageable pageable) {
+
+        // DB에서 모든 리뷰를 페이징하여 가져옵니다.
+        Page<Review> reviewPage = reviewRepository.findAll(pageable);
+
+        // DTO로 변환하여 반환
+        return new StoreReviewListResponseDto(reviewPage);
     }
 }

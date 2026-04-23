@@ -5,10 +5,8 @@ import com.sparta.delivhub.domain.order.entity.Order;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.user.entity.User;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
+import lombok.*;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.util.UUID;
@@ -16,6 +14,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "p_review")
 @Getter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLRestriction("deleted_at IS NULL")
 public class Review extends BaseEntity {

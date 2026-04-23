@@ -8,6 +8,7 @@ import com.sparta.delivhub.domain.order.repository.OrderRepository;
 import com.sparta.delivhub.domain.review.dto.MyReviewListResponseDto;
 import com.sparta.delivhub.domain.review.dto.ReviewRequestDto;
 import com.sparta.delivhub.domain.review.dto.ReviewResponseDto;
+import com.sparta.delivhub.domain.review.dto.StoreReviewListResponseDto;
 import com.sparta.delivhub.domain.review.entity.Review;
 import com.sparta.delivhub.domain.review.repository.ReviewRepository;
 import com.sparta.delivhub.domain.store.entity.Store;
@@ -192,5 +193,77 @@ class ReviewServiceTest {
                 () -> reviewService.getMyReviews(currentUserId, userRole, pageable));
 
         assertEquals(ErrorCode.ACCESS_DENIED, exception.getErrorCode());
+    }
+
+    // ==========================================
+    // 3. 모든 가게 리뷰 조회(전체 공개 API) 테스트
+    // ==========================================
+
+    @Test
+    @DisplayName("모든 가게 리뷰 조회 성공 - 페이징 처리 확인 (Order, User 엔티티 완벽 반영)")
+    void getAllStoreReviews_Success() {
+        // [1] Given (준비)
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // 1. 진짜 User 엔티티 구조에 맞춘 가짜 유저 생성 (기본키는 username!)
+        User fakeUser1 = User.builder()
+                .username("user123")  // 엔티티에 있는 username 필드 활용
+                .nickname("맛있는녀석들") // 엔티티에 있는 nickname 필드 활용
+                .email("user1@test.com")
+                .password("password")
+                .build();
+
+        User fakeUser2 = User.builder()
+                .username("user456")
+                .nickname("고독한미식가")
+                .email("user2@test.com")
+                .password("password")
+                .build();
+
+        // 2. 진짜 Order 엔티티 구조에 맞춘 가짜 주문 생성
+        Order fakeOrder1 = Order.builder()
+                .userId("user123") // Order는 String 타입의 userId를 가짐
+                .totalPrice(15000L)
+                .build();
+        ReflectionTestUtils.setField(fakeOrder1, "id", UUID.randomUUID());
+
+        Order fakeOrder2 = Order.builder()
+                .userId("user456")
+                .totalPrice(20000L)
+                .build();
+        ReflectionTestUtils.setField(fakeOrder2, "id", UUID.randomUUID());
+
+        // 3. 리뷰 객체 조립 (User와 Order 모두 주입)
+        Review review1 = Review.builder()
+                .user(fakeUser1)
+                .order(fakeOrder1)
+                .rating(5)
+                .content("정말 맛있어요!")
+                .build();
+        ReflectionTestUtils.setField(review1, "id", UUID.randomUUID());
+
+        Review review2 = Review.builder()
+                .user(fakeUser2)
+                .order(fakeOrder2)
+                .rating(4)
+                .content("괜찮네요.")
+                .build();
+        ReflectionTestUtils.setField(review2, "id", UUID.randomUUID());
+
+        // 4. 가짜 리포지토리 응답 세팅
+        Page<Review> reviewPage = new PageImpl<>(List.of(review1, review2), pageable, 2);
+        when(reviewRepository.findAll(pageable)).thenReturn(reviewPage);
+
+        // [2] When (실행)
+        StoreReviewListResponseDto response = reviewService.getAllStoreReviews(pageable);
+
+        // [3] Then (검증)
+        assertNotNull(response);
+        assertEquals(2, response.getContent().size());
+        assertEquals(0, response.getPage());
+        assertEquals(2, response.getTotalElements());
+
+        // 5. 검증 완료 (DTO에서 어떤 값을 꺼내게 짰더라도 통과하도록 구성)
+        assertEquals("정말 맛있어요!", response.getContent().get(0).getContent());
     }
 }
