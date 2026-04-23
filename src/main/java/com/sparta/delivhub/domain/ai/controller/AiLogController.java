@@ -1,17 +1,15 @@
 package com.sparta.delivhub.domain.ai.controller;
 
 import com.sparta.delivhub.common.dto.ApiResponse;
-import com.sparta.delivhub.common.dto.BusinessException;
-import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.common.util.PageableUtils;
 import com.sparta.delivhub.domain.ai.dto.ResponseAiLogDto;
 import com.sparta.delivhub.domain.ai.service.AiLogService;
+import com.sparta.delivhub.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -28,17 +26,21 @@ public class AiLogController {
             @RequestParam(required = false) String username,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt,DESC") String sort) {
+            @RequestParam(defaultValue = "createdAt,DESC") String sort,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
         Pageable pageable = PageableUtils.of(page, size, sort);
-        Page<ResponseAiLogDto> response = aiLogService.getAiLogs(username, pageable);
+        Page<ResponseAiLogDto> response = aiLogService.getAiLogs(userDetails.getUsername(),username, pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     // AI 로그 단건 조회
     @GetMapping("/logs/{logId}")
     public ResponseEntity<ApiResponse<ResponseAiLogDto>> getAiLog(
-            @PathVariable UUID logId) {
-        ResponseAiLogDto response = aiLogService.getAiLog(logId);
+            @PathVariable UUID logId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        ResponseAiLogDto response = aiLogService.getAiLog(userDetails.getUsername(), logId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
