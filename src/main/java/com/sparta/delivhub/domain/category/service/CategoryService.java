@@ -75,13 +75,13 @@ public class CategoryService {
 
     @Transactional
     public CategoryIdResponseDto deleteCategory(UUID id, String userId) {
-        Category Category = categoryRepository.findById(id)
+        Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
-        Category.softDelete(userId);
+        category.softDelete(userId);
 
         return CategoryIdResponseDto.builder()
-                .categoryId(Category.getId())
+                .categoryId(category.getId())
                 .build();
     }
 
