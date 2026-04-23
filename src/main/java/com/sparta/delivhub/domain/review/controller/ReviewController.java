@@ -1,10 +1,7 @@
 package com.sparta.delivhub.domain.review.controller;
 
 import com.sparta.delivhub.common.dto.ApiResponse;
-import com.sparta.delivhub.domain.review.dto.MyReviewListResponseDto;
-import com.sparta.delivhub.domain.review.dto.ReviewRequestDto;
-import com.sparta.delivhub.domain.review.dto.ReviewResponseDto;
-import com.sparta.delivhub.domain.review.dto.StoreReviewListResponseDto;
+import com.sparta.delivhub.domain.review.dto.*;
 import com.sparta.delivhub.domain.review.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/reviews")
@@ -73,5 +72,44 @@ public class ReviewController {
 
         // 성공 응답 (200 OK)
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responseData));
+    }
+
+    /**
+     * 리뷰 수정
+     */
+    @PutMapping("/{reviewId}")
+    public ResponseEntity<ApiResponse<ReviewResponseDto>> updateReview(
+            @PathVariable UUID reviewId,
+            @Valid @RequestBody ReviewUpdateRequestDto request,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        // 1. 유저 정보 추출
+        String currentUserId = userDetails.getUsername();
+        String userRole = userDetails.getAuthorities().iterator().next().getAuthority();
+
+        // 2. 서비스 로직 호출
+        ReviewResponseDto responseData = reviewService.updateReview(reviewId, request, currentUserId, userRole);
+
+        // 3. 성공 응답 (200 OK 반환)
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responseData));
+    }
+
+    /**
+     * 리뷰 삭제
+     */
+    @DeleteMapping("/{reviewId}")
+    public ResponseEntity<ApiResponse<Void>> deleteReview(
+            @PathVariable UUID reviewId,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        // 1. 유저 정보 추출
+        String currentUserId = userDetails.getUsername();
+        String userRole = userDetails.getAuthorities().iterator().next().getAuthority();
+
+        // 2. 서비스 로직 호출
+        reviewService.deleteReview(reviewId, currentUserId, userRole);
+
+        // 3. 성공 응답 (200 OK, 명세서 요구사항에 따라 data는 비워서 보냄)
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 }

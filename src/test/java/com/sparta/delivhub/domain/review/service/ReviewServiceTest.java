@@ -5,10 +5,7 @@ import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.domain.order.entity.Order;
 import com.sparta.delivhub.domain.order.entity.OrderStatus;
 import com.sparta.delivhub.domain.order.repository.OrderRepository;
-import com.sparta.delivhub.domain.review.dto.MyReviewListResponseDto;
-import com.sparta.delivhub.domain.review.dto.ReviewRequestDto;
-import com.sparta.delivhub.domain.review.dto.ReviewResponseDto;
-import com.sparta.delivhub.domain.review.dto.StoreReviewListResponseDto;
+import com.sparta.delivhub.domain.review.dto.*;
 import com.sparta.delivhub.domain.review.entity.Review;
 import com.sparta.delivhub.domain.review.repository.ReviewRepository;
 import com.sparta.delivhub.domain.store.entity.Store;
@@ -265,5 +262,224 @@ class ReviewServiceTest {
 
         // 5. 검증 완료 (DTO에서 어떤 값을 꺼내게 짰더라도 통과하도록 구성)
         assertEquals("정말 맛있어요!", response.getContent().get(0).getContent());
+    }
+    // ==========================================
+    // 4. 리뷰 수정 기능 테스트
+    // ==========================================
+
+    @Test
+    @DisplayName("리뷰 수정 성공 - 본인이 작성한 리뷰 수정")
+    void updateReview_Success() {
+        // [1] Given
+        UUID reviewId = UUID.randomUUID();
+        String currentUserId = "user123";
+        String userRole = "CUSTOMER";
+
+        // 수정할 내용이 담긴 Request DTO
+        ReviewUpdateRequestDto request = ReviewUpdateRequestDto.builder()
+                .rating(4)
+                .content("다시 먹어보니 조금 짜네요. 그래도 맛있습니다.")
+                .build();
+
+        // 진짜 주인(user123) 객체 생성
+        User owner = User.builder().username("user123").build();
+
+        // 기존에 작성되어 있던 가짜 리뷰 객체 생성 (수정 전 상태: 5점, "완벽해요")
+        Review myReview = Review.builder()
+                .user(owner)
+                .rating(5)
+                .content("완벽해요!")
+                .build();
+        ReflectionTestUtils.setField(myReview, "id", reviewId);
+
+        // 레포지토리 대본: "reviewId로 찾으면 myReview를 줘라"
+        when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(myReview));
+
+        // [2] When
+        ReviewResponseDto response = reviewService.updateReview(reviewId, request, currentUserId, userRole);
+
+        // [3] Then
+        assertNotNull(response);
+        // 별점과 내용이 request 대로 잘 바뀌었는지(더티 체킹 업데이트) 확인
+        assertEquals(4, response.getRating());
+        assertEquals("다시 먹어보니 조금 짜네요. 그래도 맛있습니다.", response.getContent());
+    }
+
+    @Test
+    @DisplayName("리뷰 수정 실패 - 로그인한 사용자가 리뷰 작성자가 아닐 때 (403 방어)")
+    void updateReview_Fail_NotOwner() {
+        // [1] Given
+        UUID reviewId = UUID.randomUUID();
+        String currentUserId = "hacker999"; // 남의 리뷰를 수정하려는 유저
+        String userRole = "CUSTOMER";
+
+        ReviewUpdateRequestDto request = ReviewUpdateRequestDto.builder()
+                .rating(1)
+                .content("맛없음으로 조작하기")
+                .build();
+
+        // 진짜 주인(user123) 객체 생성
+        User realOwner = User.builder().username("user123").build();
+
+        // 진짜 주인이 쓴 가짜 리뷰
+        Review otherPersonReview = Review.builder()
+                .user(realOwner)
+                .rating(5)
+                .content("정말 맛있어요!")
+                .build();
+        ReflectionTestUtils.setField(otherPersonReview, "id", reviewId);
+
+        when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(otherPersonReview));
+
+        // [2] When & [3] Then
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> reviewService.updateReview(reviewId, request, currentUserId, userRole));
+
+        // 명세서에 명시된 대로 권한 없음(FORBIDDEN -> ACCESS_DENIED) 에러가 터지는지 확인
+        assertEquals(ErrorCode.ACCESS_DENIED, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("리뷰 수정 실패 - 존재하지 않는 리뷰를 수정하려 할 때")
+    void updateReview_Fail_NotFound() {
+        // [1] Given
+        UUID reviewId = UUID.randomUUID();
+        String currentUserId = "user123";
+        String userRole = "CUSTOMER";
+
+        ReviewUpdateRequestDto request = ReviewUpdateRequestDto.builder()
+                .rating(4)
+                .content("내용수정")
+                .build();
+
+        // DB에서 리뷰를 찾지 못한 상황 연출
+        when(reviewRepository.findById(reviewId)).thenReturn(Optional.empty());
+
+        // [2] When & [3] Then
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> reviewService.updateReview(reviewId, request, currentUserId, userRole));
+
+        // R001: 리뷰를 찾을 수 없습니다 에러 발생 확인
+        assertEquals(ErrorCode.REVIEW_NOT_FOUND, exception.getErrorCode());
+    }
+
+    // ==========================================
+    // 5. 리뷰 삭제(소프트 딜리트) 기능 테스트
+    // ==========================================
+
+    @Test
+    @DisplayName("리뷰 삭제 성공 - 본인(CUSTOMER)이 작성한 리뷰 삭제")
+    void deleteReview_Success_Customer() {
+        // [1] Given
+        UUID reviewId = UUID.randomUUID();
+        String currentUserId = "user123";
+        String userRole = "CUSTOMER";
+
+        User owner = User.builder().username("user123").build();
+        Review myReview = Review.builder().user(owner).build();
+        ReflectionTestUtils.setField(myReview, "id", reviewId);
+
+        when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(myReview));
+
+        // [2] When
+        reviewService.deleteReview(reviewId, currentUserId, userRole);
+
+        // [3] Then
+        // 소프트 딜리트 필드가 잘 채워졌는지 확인
+        assertNotNull(myReview.getDeletedAt());
+        assertEquals("user123", myReview.getDeletedBy());
+    }
+
+    @Test
+    @DisplayName("리뷰 삭제 성공 - 가게 주인(OWNER)이 본인 가게 리뷰 삭제 (Store, User 엔티티 완벽 반영)")
+    void deleteReview_Success_Owner() {
+        // [1] Given
+        UUID reviewId = UUID.randomUUID();
+        String ownerId = "owner777"; // 현재 로그인한 사장님 ID
+        String userRole = "OWNER";
+
+        // 1. 진짜 사장님(User) 객체 생성
+        User storeOwner = User.builder().username(ownerId).build();
+
+        // 2. 가게(Store) 객체 생성 시, owner 필드에 사장님 객체를 쏙 넣어줍니다.
+        Store myStore = Store.builder().owner(storeOwner).build();
+
+        // 3. 손님(User) 객체 생성 (이 리뷰를 쓴 사람)
+        User customer = User.builder().username("customer1").build();
+
+        // 4. 리뷰(Review) 객체 조립
+        Review review = Review.builder()
+                .user(customer) // 작성자는 손님
+                .store(myStore) // 작성된 가게는 위에서 만든 내 가게
+                .build();
+        ReflectionTestUtils.setField(review, "id", reviewId);
+
+        when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(review));
+
+        // [2] When
+        // 사장님이 삭제를 시도합니다.
+        reviewService.deleteReview(reviewId, ownerId, userRole);
+
+        // [3] Then
+        // 권한 에러(403) 없이 무사히 넘어왔고, 삭제 시간이 기록되었는지 확인
+        assertNotNull(review.getDeletedAt());
+        assertEquals(ownerId, review.getDeletedBy());
+    }
+
+    @Test
+    @DisplayName("리뷰 삭제 성공 - 관리자(MASTER)의 강제 삭제")
+    void deleteReview_Success_Master() {
+        // [1] Given
+        UUID reviewId = UUID.randomUUID();
+        String adminId = "admin_master";
+        String userRole = "MASTER";
+
+        User customer = User.builder().username("user1").build();
+        Review review = Review.builder().user(customer).build();
+
+        when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(review));
+
+        // [2] When
+        reviewService.deleteReview(reviewId, adminId, userRole);
+
+        // [3] Then
+        assertNotNull(review.getDeletedAt());
+        assertEquals(adminId, review.getDeletedBy());
+    }
+
+    @Test
+    @DisplayName("리뷰 삭제 실패 - 타인의 리뷰를 삭제하려 할 때 (403 방어)")
+    void deleteReview_Fail_AccessDenied() {
+        // [1] Given
+        UUID reviewId = UUID.randomUUID();
+        String hackerId = "hacker111";
+        String userRole = "CUSTOMER";
+
+        User realOwner = User.builder().username("user123").build();
+        Review review = Review.builder().user(realOwner).build();
+
+        when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(review));
+
+        // [2] When & [3] Then
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> reviewService.deleteReview(reviewId, hackerId, userRole));
+
+        assertEquals(ErrorCode.ACCESS_DENIED, exception.getErrorCode());
+        // 삭제 필드가 여전히 null 인지도 확인하면 더 정확합니다.
+        assertNull(review.getDeletedAt());
+    }
+
+    @Test
+    @DisplayName("리뷰 삭제 실패 - 이미 삭제되었거나 존재하지 않는 리뷰")
+    void deleteReview_Fail_NotFound() {
+        // [1] Given
+        UUID reviewId = UUID.randomUUID();
+        when(reviewRepository.findById(reviewId)).thenReturn(Optional.empty());
+
+        // [2] When & [3] Then
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> reviewService.deleteReview(reviewId, "user1", "CUSTOMER"));
+
+        assertEquals(ErrorCode.REVIEW_NOT_FOUND, exception.getErrorCode());
     }
 }

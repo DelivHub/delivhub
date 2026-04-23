@@ -9,6 +9,7 @@ import lombok.*;
 
 import org.hibernate.annotations.SQLRestriction;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -56,4 +57,11 @@ public class Review extends BaseEntity {
         this.content = content;
         this.imageUrl = imageUrl;
     }
+
+    // 리뷰 수정 메서드 (더티 체킹용)
+    public void updateReview(Integer rating, String content) {
+        this.rating = rating;
+        this.content = content;
+    }
+
 }
