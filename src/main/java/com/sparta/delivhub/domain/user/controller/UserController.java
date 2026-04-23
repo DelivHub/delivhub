@@ -11,20 +11,30 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import com.sparta.delivhub.common.dto.ApiResponse;
+import com.sparta.delivhub.common.dto.PageResponse;
+import com.sparta.delivhub.domain.user.dto.UserResponse;
+import com.sparta.delivhub.domain.user.service.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-@Controller
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/v1/users")
 public class UserController {
 
     private final PaymentService paymentService;
-
-    public UserController(PaymentService paymentService) {
-        this.paymentService = paymentService;
-    }
+    private final UserService userService;
 
     /**
      * 내 결제 내역 전체 조회
      */
-    @GetMapping("/api/v1/users/payments")
+    @GetMapping("/payments")
     public ResponseEntity<ApiResponse<MyPaymentListResponseDto>> getMyPayments(
             @AuthenticationPrincipal UserDetails userDetails,
             @PageableDefault(size = 10, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable
@@ -37,5 +47,27 @@ public class UserController {
 
         // 3. 성공 응답 반환 (200 OK)
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responseData));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<PageResponse<UserResponse>>> getUsers(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String role,
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        PageResponse<UserResponse> response = userService.getUsers(keyword, role, pageable);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(response));
+    }
+
+    @GetMapping("/{username}")
+    public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable String username) {
+        UserResponse response = userService.getUser(username);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(response));
     }
 }
