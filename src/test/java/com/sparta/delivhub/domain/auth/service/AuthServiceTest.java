@@ -1,5 +1,7 @@
 package com.sparta.delivhub.domain.auth.service;
 
+import com.sparta.delivhub.common.dto.BusinessException;
+import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.domain.auth.dto.LoginRequest;
 import com.sparta.delivhub.domain.auth.dto.LoginResponse;
 import com.sparta.delivhub.domain.auth.dto.SignupRequest;
@@ -66,6 +68,48 @@ class AuthServiceTest {
         assertThat(response.getNickname()).isEqualTo("홍길동");
         assertThat(response.getRole()).isEqualTo(UserRole.CUSTOMER);
         verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("회원가입_실패_중복 username")
+    void signup_fail_duplicateUsername() {
+        //given
+        SignupRequest request = SignupRequest.builder()
+                .username("user01")
+                .password("Password1!")
+                .nickname("홍길동")
+                .email("user01@example.com")
+                .role(UserRole.CUSTOMER)
+                .build();
+
+        given(userRepository.existsByUsername("user01")).willReturn(true);
+
+        //when & then
+        assertThatThrownBy(()->authService.signup(request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e->((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.DUPLICATE_USERNAME);
+    }
+
+    @Test
+    @DisplayName("회원가입_실패_중복 email")
+    void signup_fail_duplicateEmail() {
+        //given
+        SignupRequest request = SignupRequest.builder()
+                .username("user01")
+                .password("Password1!")
+                .nickname("홍길동")
+                .email("user01@example.com")
+                .role(UserRole.CUSTOMER)
+                .build();
+
+        given(userRepository.existsByEmail("user01@example.com")).willReturn(true);
+
+        //when & then
+        assertThatThrownBy(()->authService.signup(request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e->((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.DUPLICATE_EMAIL);
     }
 
     @Test
