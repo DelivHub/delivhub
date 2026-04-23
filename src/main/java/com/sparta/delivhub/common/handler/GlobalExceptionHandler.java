@@ -3,6 +3,7 @@ package com.sparta.delivhub.common.handler;
 import com.sparta.delivhub.common.dto.ErrorResponse;
 import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.List;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -56,11 +58,14 @@ public class GlobalExceptionHandler {
 
     // 4. JSON 매핑 실패 시 ( Enum 오타 등 ) 처리
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(
+            HttpMessageNotReadableException e
+    ) {
         ErrorResponse response = ErrorResponse.builder()
                 .status(400)
                 .message("INVALID_JSON_FORMAT")
                 .build();
+        log.warn(e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 

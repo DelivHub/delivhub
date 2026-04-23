@@ -113,7 +113,7 @@ class AuthServiceTest {
 
     @Test
     @DisplayName("로그인_성공")
-    void login_success() {
+    void loginSuccess() {
         //given
         User user = User.builder()
                 .username("user01")
