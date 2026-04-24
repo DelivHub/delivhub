@@ -66,8 +66,12 @@ public class UserService {
 
     @PreAuthorize("#username == authentication.name or hasAnyRole('MANAGER', 'MASTER')")
     public UserResponse getUser(String username) {
-        User user = userRepository.findByUsernameAndDeletedAtIsNull(username)
-                .orElseThrow(()->new BusinessException(ErrorCode.USER_NOT_FOUND));
+        User user = findUserByUsername(username);
         return UserResponse.from(user);
+    }
+
+    public User findUserByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 }
