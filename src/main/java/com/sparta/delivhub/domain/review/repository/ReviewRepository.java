@@ -16,7 +16,7 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     boolean existsByOrderId(UUID orderId);
 
     //  특정 유저의 리뷰 목록을 페이징하여 조회
-    @Query("SELECT r FROM Review r WHERE r.user.username = :userId")
+    @Query("SELECT r FROM Review r JOIN FETCH r.user JOIN FETCH r.store JOIN FETCH r.order WHERE r.user.username = :userId")
     Page<Review> findAllByUserId(@Param("userId") String userId, Pageable pageable);
 
     // ✨ 특정 가게의 평균 별점을 계산 (리뷰가 없으면 0.0 반환)
