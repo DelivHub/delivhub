@@ -41,6 +41,9 @@ dependencies {
 	//JUnit 5, Mockito, AssertJ
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
+	// 스프링 시큐리티 테스트
+	testImplementation 'org.springframework.security:spring-security-test'
+
 	// Validation 추가
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 
