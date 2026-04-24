@@ -14,6 +14,9 @@ import com.sparta.delivhub.domain.store.service.StoreService;
 import com.sparta.delivhub.security.UserDetailsImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,8 +36,9 @@ public class AreaController {
     }
 
     @GetMapping("/areas")
-    public ApiResponse<List<AreaResponseDto>> getAllAreas() {
-        return ApiResponse.success(areaService.findAllAreas());
+    public ApiResponse<List<AreaResponseDto>> getAllAreas(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam(defaultValue = "createdAt,DESC") String sort) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
+        return ApiResponse.success(areaService.findAllAreas(pageable));
     }
 
     @GetMapping("/areas/{areaId}")

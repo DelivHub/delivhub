@@ -11,6 +11,7 @@ import com.sparta.delivhub.domain.category.repository.CategoryRepository;
 import com.sparta.delivhub.domain.user.entity.User;
 import com.sparta.delivhub.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,8 +43,8 @@ public class CategoryService {
                 .build();
     }
 
-    public List<CategoryNameResponseDto> findAllCategory() {
-        return categoryRepository.findAll().stream()
+    public List<CategoryNameResponseDto> findAllCategory(Pageable pageable) {
+        return categoryRepository.findAll(pageable).stream()
                 .map(CategoryNameResponseDto::new)
                 .toList();
     }

@@ -1,6 +1,7 @@
 package com.sparta.delivhub.domain.category.controller;
 
 import com.sparta.delivhub.common.dto.ApiResponse;
+import com.sparta.delivhub.common.util.PageableUtils;
 import com.sparta.delivhub.domain.category.dto.requset.CategoryRequestDto;
 import com.sparta.delivhub.domain.category.dto.response.CategoryIdResponseDto;
 import com.sparta.delivhub.domain.category.dto.response.CategoryNameResponseDto;
@@ -8,6 +9,7 @@ import com.sparta.delivhub.domain.category.service.CategoryService;
 import com.sparta.delivhub.security.UserDetailsImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -29,8 +31,9 @@ public class CategoryController {
     }
 
     @GetMapping("/categories")
-    public ApiResponse<List<CategoryNameResponseDto>> getAllCategory() {
-        return ApiResponse.success(categoryService.findAllCategory());
+    public ApiResponse<List<CategoryNameResponseDto>> getAllCategory(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam(defaultValue = "createdAt,DESC") String sort) {
+        Pageable pageable = PageableUtils.of(page, size, sort);
+        return ApiResponse.success(categoryService.findAllCategory(pageable));
     }
 
     @GetMapping("/categories/{categoryId}")

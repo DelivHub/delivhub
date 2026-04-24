@@ -23,6 +23,7 @@ import com.sparta.delivhub.domain.store.repository.StoreRepository;
 import com.sparta.delivhub.domain.user.entity.User;
 import com.sparta.delivhub.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,8 +57,8 @@ public class AreaService {
                 .build();
     }
 
-    public List<AreaResponseDto> findAllAreas() {
-        return areaRepository.findAll().stream()
+    public List<AreaResponseDto> findAllAreas(Pageable pageable) {
+        return areaRepository.findAll(pageable).stream()
                 .map(AreaResponseDto::new)
                 .toList();
     }
