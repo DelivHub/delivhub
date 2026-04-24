@@ -18,13 +18,18 @@ import com.sparta.delivhub.domain.user.dto.UpdateRoleRequest;
 import com.sparta.delivhub.domain.user.dto.UpdateUserRequest;
 import com.sparta.delivhub.domain.user.dto.UserResponse;
 import com.sparta.delivhub.domain.user.service.UserService;
+import com.sparta.delivhub.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.PushbackReader;
 
 @RestController
 @RequiredArgsConstructor
@@ -65,6 +70,7 @@ public class UserController {
                 .body(ApiResponse.success(response));
     }
 
+    @PreAuthorize("#username == authentication.name or hasAnyRole('MANAGER', 'MASTER')")
     @GetMapping("/{username}")
     public ResponseEntity<ApiResponse<UserResponse>> getUser(
             @PathVariable String username
@@ -76,10 +82,11 @@ public class UserController {
                 .body(ApiResponse.success(response));
     }
 
+    @PreAuthorize("#username == authentication.name or hasAnyRole('MANAGER', 'MASTER')")
     @PutMapping("/{username}")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserInfo(
             @PathVariable String username,
-            UpdateUserRequest request
+            @RequestBody UpdateUserRequest request
     ) {
         UserResponse response = userService.updateUserInfo(username, request);
 
@@ -88,10 +95,11 @@ public class UserController {
                 .body(ApiResponse.success(response));
     }
 
+    @PreAuthorize("hasRole('MASTER') and #username != authentication.name")
     @PutMapping("/{username}/role")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserRole(
             @PathVariable String username,
-            UpdateRoleRequest request
+            @RequestBody UpdateRoleRequest request
     ) {
         UserResponse response = userService.updateUserRole(username, request);
 
@@ -100,13 +108,26 @@ public class UserController {
                 .body(ApiResponse.success(response));
     }
 
+    @PreAuthorize("#username == authentication.name")
     @PutMapping("/{username}/password")
     public ResponseEntity<ApiResponse<Void>> updatePassword(
             @PathVariable String username,
-            UpdatePasswordRequest request
+            @RequestBody UpdatePasswordRequest request
     ) {
         userService.updatePassword(username, request);
 
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success());
+    }
+
+    @PreAuthorize("hasAnyRole('MANAGER', 'MASTER') and #username != authentication.name")
+    @DeleteMapping("/{username}")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @PathVariable String username,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        userService.deleteUser(username, userDetails.getUsername());
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.success());

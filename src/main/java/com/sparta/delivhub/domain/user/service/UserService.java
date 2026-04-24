@@ -15,7 +15,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,7 +66,6 @@ public class UserService {
         return new PageResponse<>(userPage.map(UserResponse::from));
     }
 
-    @PreAuthorize("#username == authentication.name or hasAnyRole('MANAGER', 'MASTER')")
     public UserResponse getUser(String username) {
         User user = findUserByUsername(username);
         return UserResponse.from(user);
@@ -78,7 +76,6 @@ public class UserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
-    @PreAuthorize("#username == authentication.name or hasAnyRole('MANAGER', 'MASTER')")
     @Transactional
     public UserResponse updateUserInfo(String username, UpdateUserRequest request) {
         User user = findUserByUsername(username);
@@ -131,4 +128,11 @@ public class UserService {
         // todo : 토큰 무효화
     }
 
+    @Transactional
+    public void deleteUser(String username, String deletedBy) {
+        User user = findUserByUsername(username);
+        user.softDelete(deletedBy);
+
+        // todo : 토큰 무효화
+    }
 }
