@@ -185,15 +185,13 @@ public class ReviewService {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
+        // 3. 삭제 처리
+        review.softDelete(currentUserId);
         reviewRepository.flush();
 
-        //가게의 평균 별점 갱신
+        // 4. 가게의 평균 별점 갱신
         Store store = review.getStore();
         updateStoreAverageRating(store);
-
-        // 3. 삭제 처리 (엔티티의 필드 업데이트 -> 더티 체킹)
-        //누가 지웠는지(currentUserId)를 기록
-        review.softDelete(currentUserId);
     }
 
     /**
