@@ -25,6 +25,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
+import com.sparta.delivhub.domain.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -49,6 +50,17 @@ class PaymentServiceTest {
 
     @Mock
     private StoreRepository storeRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    private User createMockUser(String username, String roleName) {
+        // RETURNS_DEEP_STUBS를 사용하면 user.getUserRole().name() 같은 연속된 호출도 알아서 가짜로 만들어줍니다!
+        User mockUser = mock(User.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
+        when(mockUser.getUsername()).thenReturn(username);
+        when(mockUser.getUserRole().name()).thenReturn(roleName);
+        return mockUser;
+    }
 
     @Test
     @DisplayName("결제 생성 성공 테스트")

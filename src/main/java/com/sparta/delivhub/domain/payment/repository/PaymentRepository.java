@@ -24,4 +24,6 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     // 주문(Order) 엔티티의 storeId를 기준으로 결제 내역을 페이징하여 조회
     @Query("SELECT p FROM Payment p WHERE p.order.storeId = :storeId")
     Page<Payment> findAllByStoreId(@Param("storeId") UUID storeId, Pageable pageable);
+
+    Optional<Payment> findByOrderId(UUID orderId);
 }

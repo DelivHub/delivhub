@@ -3,6 +3,7 @@ package com.sparta.delivhub.domain.payment.service;
 import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.domain.order.entity.Order;
+import com.sparta.delivhub.domain.order.entity.OrderStatus;
 import com.sparta.delivhub.domain.order.repository.OrderRepository;
 import com.sparta.delivhub.domain.payment.dto.MyPaymentListResponseDto;
 import com.sparta.delivhub.domain.payment.dto.RequestPaymentDTO;
@@ -46,6 +47,7 @@ public class PaymentService {
         // 1. 주문 엔티티 조회
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+
 
         // 2. 권한 검증 (이 주문을 한 사람이 현재 로그인한 유저가 맞는지)
         if (!order.getUserId().equals(currentUserId)) {
