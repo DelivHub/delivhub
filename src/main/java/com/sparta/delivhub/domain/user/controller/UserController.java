@@ -13,6 +13,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import com.sparta.delivhub.common.dto.ApiResponse;
 import com.sparta.delivhub.common.dto.PageResponse;
+import com.sparta.delivhub.domain.user.dto.UpdatePasswordRequest;
+import com.sparta.delivhub.domain.user.dto.UpdateRoleRequest;
+import com.sparta.delivhub.domain.user.dto.UpdateUserRequest;
 import com.sparta.delivhub.domain.user.dto.UserResponse;
 import com.sparta.delivhub.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -63,11 +66,49 @@ public class UserController {
     }
 
     @GetMapping("/{username}")
-    public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable String username) {
+    public ResponseEntity<ApiResponse<UserResponse>> getUser(
+            @PathVariable String username
+    ) {
         UserResponse response = userService.getUser(username);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.success(response));
+    }
+
+    @PutMapping("/{username}")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUserInfo(
+            @PathVariable String username,
+            UpdateUserRequest request
+    ) {
+        UserResponse response = userService.updateUserInfo(username, request);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(response));
+    }
+
+    @PutMapping("/{username}/role")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUserRole(
+            @PathVariable String username,
+            UpdateRoleRequest request
+    ) {
+        UserResponse response = userService.updateUserRole(username, request);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(response));
+    }
+
+    @PutMapping("/{username}/password")
+    public ResponseEntity<ApiResponse<Void>> updatePassword(
+            @PathVariable String username,
+            UpdatePasswordRequest request
+    ) {
+        userService.updatePassword(username, request);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success());
     }
 }

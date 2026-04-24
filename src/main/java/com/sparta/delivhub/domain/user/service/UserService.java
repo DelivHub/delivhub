@@ -3,6 +3,9 @@ package com.sparta.delivhub.domain.user.service;
 import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.common.dto.PageResponse;
+import com.sparta.delivhub.domain.user.dto.UpdatePasswordRequest;
+import com.sparta.delivhub.domain.user.dto.UpdateRoleRequest;
+import com.sparta.delivhub.domain.user.dto.UpdateUserRequest;
 import com.sparta.delivhub.domain.user.dto.UserResponse;
 import com.sparta.delivhub.domain.user.entity.User;
 import com.sparta.delivhub.domain.user.entity.UserRole;
@@ -74,4 +77,58 @@ public class UserService {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
+
+    @PreAuthorize("#username == authentication.name or hasAnyRole('MANAGER', 'MASTER')")
+    @Transactional
+    public UserResponse updateUserInfo(String username, UpdateUserRequest request) {
+        User user = findUserByUsername(username);
+
+        boolean nicknameUnchanged = request.getNickname() == null
+                || request.getNickname().equals(user.getNickname());
+
+        // 중복 이메일 검증
+        if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(request.getEmail())) {
+                throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
+            }
+        }
+
+        boolean emailUnchanged = request.getEmail() == null
+                || request.getEmail().equals(user.getEmail());
+
+        boolean isPublicUnchanged = request.getIsPublic() == null
+                || request.getIsPublic().equals(user.getIsPublic());
+
+        if (nicknameUnchanged && emailUnchanged && isPublicUnchanged) {
+            throw new BusinessException(ErrorCode.NO_CHANGES_DETECTED);
+        }
+
+        user.updateUser(request.getNickname(), request.getEmail(), request.getIsPublic());
+        return UserResponse.from(user);
+    }
+
+    @Transactional
+    public UserResponse updateUserRole(String username, UpdateRoleRequest request) {
+        User user = findUserByUsername(username);
+        user.updateRole(request.getRole());
+        return UserResponse.from(user);
+    }
+
+    @Transactional
+    public void updatePassword(String username, UpdatePasswordRequest request) {
+        User user = findUserByUsername(username);
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BusinessException(ErrorCode.WRONG_CURRENT_PASSWORD);
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new BusinessException(ErrorCode.PASSWORD_SAME_AS_CURRENT);
+        }
+
+        user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
+
+        // todo : 토큰 무효화
+    }
+
 }
