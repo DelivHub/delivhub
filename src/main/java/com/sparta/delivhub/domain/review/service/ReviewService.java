@@ -18,6 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.UUID;
 
 @Service
@@ -27,7 +29,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final OrderRepository orderRepository;
     private final StoreRepository storeRepository;
-    private final UserRepository userRepository; // User 엔티티 조회를 위해 필요
+    private final UserRepository userRepository;
 
     @Transactional
     public ReviewResponseDto createReview(ReviewRequestDto request, String currentUserId, String userRole) {
@@ -45,7 +47,6 @@ public class ReviewService {
         }
 
         // 3. 주문 상태 확인 (COMPLETED 인지 확인)
-        // 주의: 프로젝트의 OrderStatus Enum에 "COMPLETED" (또는 DELIVERED)가 있다고 가정합니다.
         if (order.getStatus() != OrderStatus.COMPLETED) {
             throw new BusinessException(ErrorCode.REVIEW_BAD_REQUEST);
         }
@@ -73,6 +74,9 @@ public class ReviewService {
                 request.getImageUrl()
         );
         Review savedReview = reviewRepository.save(review);
+
+        //가게의 평균 별점 갱신
+        updateStoreAverageRating(store);
 
         // 7. DTO로 변환하여 반환
         return new ReviewResponseDto(savedReview);
@@ -125,13 +129,17 @@ public class ReviewService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
 
         // 3. 본인 확인 (명세서의 403 에러 방어)
-        // User 엔티티의 기본키 필드인 getUsername()을 사용해 비교합니다.
         if (!review.getUser().getUsername().equals(currentUserId)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
         // 4. 리뷰 데이터 변경 (더티 체킹 발생)
         review.updateReview(request.getRating(), request.getContent());
+        reviewRepository.flush();
+
+        //가게의 평균 별점 갱신
+        Store store = review.getStore();
+        updateStoreAverageRating(store);
 
         // 5. 기존에 만들어둔 ReviewResponseDto를 재활용하여 반환
         return new ReviewResponseDto(review);
@@ -144,9 +152,6 @@ public class ReviewService {
     public void deleteReview(UUID reviewId, String currentUserId, String userRole) {
 
         // 1. 리뷰 조회
-        // 💡 엔티티에 붙어있는 @SQLRestriction("deleted_at IS NULL") 덕분에,
-        // 이미 삭제된 리뷰는 여기서 조회가 안 되고 자동으로 예외가 터집니다!
-        // (명세서의 404 NOT_FOUND 조건 자동 만족)
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
 
@@ -161,7 +166,6 @@ public class ReviewService {
 
             case "OWNER":
                 // 가게 주인은 '본인 가게에 달린 리뷰'만 삭제 가능
-                // 🚨 주의: Store 엔티티에 사장님 ID를 가져오는 getUserId()나 getOwnerId()가 있다고 가정했습니다.
                 if (review.getStore().getOwner().getUsername().equals(currentUserId)) {
                     hasPermission = true;
                 }
@@ -180,8 +184,29 @@ public class ReviewService {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
+        reviewRepository.flush();
+
+        //가게의 평균 별점 갱신
+        Store store = review.getStore();
+        updateStoreAverageRating(store);
+
         // 3. 삭제 처리 (엔티티의 필드 업데이트 -> 더티 체킹)
         //누가 지웠는지(currentUserId)를 기록
         review.softDelete(currentUserId);
+    }
+
+    /**
+     * 내부 유틸 메서드: 가게의 평균 별점을 다시 계산하고 업데이트
+     */
+    private void updateStoreAverageRating(Store store) {
+        // 1. DB에서 해당 가게의 평균 별점 계산
+        Double average = reviewRepository.calculateAverageRatingByStoreId(store.getId());
+
+        // 2. Double을 BigDecimal로 변환 (소수점 첫째 자리까지만 반올림)
+        BigDecimal newAverageRating = BigDecimal.valueOf(average)
+                .setScale(1, RoundingMode.HALF_UP);
+
+        // 3. Store 엔티티 업데이트 (더티 체킹 발생)
+        store.updateAverageRating(newAverageRating);
     }
 }
