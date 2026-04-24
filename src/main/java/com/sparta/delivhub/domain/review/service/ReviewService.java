@@ -15,6 +15,7 @@ import com.sparta.delivhub.domain.user.entity.User;
 import com.sparta.delivhub.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,9 @@ public class ReviewService {
 
     @Transactional
     public ReviewResponseDto createReview(ReviewRequestDto request, String currentUserId, String userRole) {
+        User user = userRepository.findByUsername(currentUserId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
         // 1. 권한 검사 (명세서 Auth: CUSTOMER)
         if (!"CUSTOMER".equals(userRole)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
@@ -61,10 +65,6 @@ public class ReviewService {
         Store store = storeRepository.findById(request.getStoreId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORE_NOT_FOUND));
 
-        User user = userRepository.findById(currentUserId)
-                // 만약 userId 타입이 UUID이거나 Long이면 타입 변환이 필요할 수 있습니다.
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
         // 6. 리뷰 엔티티 생성 및 저장
         Review review = new Review(
                 order,
@@ -74,7 +74,7 @@ public class ReviewService {
                 request.getContent(),
                 request.getImageUrl()
         );
-        Review savedReview = reviewRepository.saveAndFlush(review);
+        Review savedReview = reviewRepository.save(review);
 
         //가게의 평균 별점 갱신
         updateStoreAverageRating(store);
@@ -90,12 +90,16 @@ public class ReviewService {
     public MyReviewListResponseDto getMyReviews(String currentUserId, String userRole, Pageable pageable) {
 
         // 1. 권한 검사 (CUSTOMER 만 조회 가능)
-        if (!"CUSTOMER".equals(userRole)) {
+        User user = userRepository.findByUsername(currentUserId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (!"CUSTOMER".equals(user.getUserRole().name())) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
         // 2. DB에서 페이징된 리뷰 데이터 가져오기
-        Page<Review> reviewPage = reviewRepository.findAllByUserId(currentUserId, pageable);
+        Pageable validatedPageable = validatePageable(pageable);
+        Page<Review> reviewPage = reviewRepository.findAllByUserId(currentUserId, validatedPageable);
 
         // 3. DTO로 묶어서 반환
         return new MyReviewListResponseDto(currentUserId, reviewPage);
@@ -108,7 +112,8 @@ public class ReviewService {
     public StoreReviewListResponseDto getAllStoreReviews(Pageable pageable) {
 
         // DB에서 모든 리뷰를 페이징하여 가져옵니다.
-        Page<Review> reviewPage = reviewRepository.findAll(pageable);
+        Pageable validatedPageable = validatePageable(pageable);
+        Page<Review> reviewPage = reviewRepository.findAll(validatedPageable);
 
         // DTO로 변환하여 반환
         return new StoreReviewListResponseDto(reviewPage);
@@ -121,7 +126,10 @@ public class ReviewService {
     public ReviewResponseDto updateReview(UUID reviewId, ReviewUpdateRequestDto request, String currentUserId, String userRole) {
 
         // 1. 권한 1차 검증 (CUSTOMER 만 접근 가능)
-        if (!"CUSTOMER".equals(userRole)) {
+        User user = userRepository.findByUsername(currentUserId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (!"CUSTOMER".equals(user.getUserRole().name())) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
@@ -136,7 +144,6 @@ public class ReviewService {
 
         // 4. 리뷰 데이터 변경 (더티 체킹 발생)
         review.updateReview(request.getRating(), request.getContent());
-        reviewRepository.flush();
 
         //가게의 평균 별점 갱신
         Store store = review.getStore();
@@ -153,13 +160,17 @@ public class ReviewService {
     public void deleteReview(UUID reviewId, String currentUserId, String userRole) {
 
         // 1. 리뷰 조회
+        User user = userRepository.findByUsername(currentUserId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        String dbRole = user.getUserRole().name();
+
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
 
-        // 2. 권한 검증 (가장 중요 ⭐️)
+        // 2. 권한 검증
         boolean hasPermission = false;
 
-        switch (userRole) {
+        switch (dbRole) {
             case "MASTER":
                 // 최고 관리자는 무조건 삭제 가능
                 hasPermission = true;
@@ -187,7 +198,6 @@ public class ReviewService {
 
         // 3. 삭제 처리
         review.softDelete(currentUserId);
-        reviewRepository.flush();
 
         // 4. 가게의 평균 별점 갱신
         Store store = review.getStore();
@@ -200,6 +210,11 @@ public class ReviewService {
     private void updateStoreAverageRating(Store store) {
         // 1. DB에서 해당 가게의 평균 별점 계산
         Double average = reviewRepository.calculateAverageRatingByStoreId(store.getId());
+
+        // 💡 리뷰가 하나도 없어서 average가 null로 나올 경우 방어 로직 추가
+        if (average == null) {
+            average = 0.0;
+        }
 
         // 2. Double을 BigDecimal로 변환 (소수점 첫째 자리까지만 반올림)
         BigDecimal newAverageRating = BigDecimal.valueOf(average)
@@ -222,9 +237,21 @@ public class ReviewService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORE_NOT_FOUND));
 
         // 2. 해당 가게에 달린 리뷰 목록 페이징 조회
-        Page<Review> reviewPage = reviewRepository.findAllByStoreId(storeId, pageable);
+        Pageable validatedPageable = validatePageable(pageable);
+        Page<Review> reviewPage = reviewRepository.findAllByStoreId(storeId, validatedPageable);
 
         // 3. DTO 조립 및 반환 (가게에 저장된 평균 평점을 쏙 빼서 같이 넘겨줍니다)
         return new StoreReviewPageResponseDto(store.getAverageRating(), reviewPage);
+    }
+
+    // ==========================================
+    // 💡 헬퍼 메서드: 페이징 사이즈 검증 (10, 30, 50 고정)
+    // ==========================================
+    private Pageable validatePageable(Pageable pageable) {
+        int size = pageable.getPageSize();
+        if (size != 10 && size != 30 && size != 50) {
+            size = 10;
+        }
+        return PageRequest.of(pageable.getPageNumber(), size, pageable.getSort());
     }
 }

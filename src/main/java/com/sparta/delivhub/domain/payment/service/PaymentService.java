@@ -189,7 +189,7 @@ public class PaymentService {
 
         Pageable validatedPageable = validatePageable(pageable);
 
-        Page<Payment> paymentPage = paymentRepository.findAllByUserId(currentUserId, pageable);
+        Page<Payment> paymentPage = paymentRepository.findAllByUserId(currentUserId, validatedPageable);
 
         return new MyPaymentListResponseDto(paymentPage);
     }
@@ -225,7 +225,7 @@ public class PaymentService {
 
         // 4. 권한 검증을 통과했다면, 가게 ID로 결제 내역 페이징 조회
         Pageable validatedPageable = validatePageable(pageable);
-        Page<Payment> paymentPage = paymentRepository.findAllByStoreId(storeId, pageable);
+        Page<Payment> paymentPage = paymentRepository.findAllByStoreId(storeId, validatedPageable);
 
         // 5. DTO로 변환하여 반환
         return new StorePaymentListResponseDto(paymentPage);
