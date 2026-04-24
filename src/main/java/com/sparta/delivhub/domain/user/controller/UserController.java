@@ -84,7 +84,7 @@ public class UserController {
 
     @PreAuthorize("#username == authentication.name or hasAnyRole('MANAGER', 'MASTER')")
     @PutMapping("/{username}")
-    public ResponseEntity<ApiResponse<UserResponse>> updateUserInfo(
+    public ResponseEntity<ApiResponse<UserResponse>> updateUser(
             @PathVariable String username,
             @RequestBody UpdateUserRequest request
     ) {
@@ -97,7 +97,7 @@ public class UserController {
 
     @PreAuthorize("hasRole('MASTER') and #username != authentication.name")
     @PutMapping("/{username}/role")
-    public ResponseEntity<ApiResponse<UserResponse>> updateUserRole(
+    public ResponseEntity<ApiResponse<UserResponse>> updateRole(
             @PathVariable String username,
             @RequestBody UpdateRoleRequest request
     ) {
