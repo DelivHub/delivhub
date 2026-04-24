@@ -9,6 +9,8 @@ import com.sparta.delivhub.domain.order.exception.OrderCancellationNotAllowedExc
 import com.sparta.delivhub.domain.order.exception.OrderNotFoundException;
 import com.sparta.delivhub.domain.order.exception.UnauthorizedOrderAccessException;
 import com.sparta.delivhub.domain.order.repository.OrderRepository;
+import com.sparta.delivhub.domain.payment.entity.PaymentStatus;
+import com.sparta.delivhub.domain.payment.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +31,7 @@ public class OrderService {
 
     private static final int ORDER_CANCEL_LIMIT_MINUTES = 5;
     private final OrderRepository orderRepository;
+    private final PaymentRepository paymentRepository;
 
     @Transactional
     public OrderResponseDto createOrder(OrderRequestDto requestDto, String userId) {
@@ -127,6 +130,12 @@ public class OrderService {
         }
 
         order.cancel();
+        // [추가된 로직] 연관된 결제 내역을 찾아 결제 상태도 CANCELED로 변경
+        paymentRepository.findByOrderId(orderId).ifPresent(payment -> {
+            // Payment 엔티티에 있는 상태 변경 메서드 호출
+            payment.updateStatus(PaymentStatus.CANCELLED);
+        });
+
         return OrderResponseDto.from(order);
     }
 

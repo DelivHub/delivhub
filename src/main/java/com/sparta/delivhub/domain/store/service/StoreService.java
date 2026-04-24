@@ -6,6 +6,7 @@ import com.sparta.delivhub.domain.area.entity.Area;
 import com.sparta.delivhub.domain.area.repository.AreaRepository;
 import com.sparta.delivhub.domain.category.entity.Category;
 import com.sparta.delivhub.domain.category.repository.CategoryRepository;
+import com.sparta.delivhub.domain.review.repository.ReviewRepository;
 import com.sparta.delivhub.domain.store.dto.requset.StoreRequestDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreDetailResponseDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreIdResponseDto;
@@ -26,6 +27,7 @@ public class StoreService {
     private final StoreRepository storeRepository;
     private final CategoryRepository categoryRepository;
     private final AreaRepository areaRepository;
+    private final ReviewRepository reviewRepository;
 
     @Transactional
     public StoreIdResponseDto createStore(StoreRequestDto storeRequestDto) {
