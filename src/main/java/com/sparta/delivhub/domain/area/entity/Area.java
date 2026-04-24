@@ -15,8 +15,8 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@SQLDelete(sql = "UPDATE areas SET deleted_at = NOW() WHERE id = ?")
-@SQLRestriction("deleted_at IS NULL")
+@SQLDelete(sql = "UPDATE p_area SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL AND is_hidden = false")
 public class Area extends BaseEntity {
 
     @Id
