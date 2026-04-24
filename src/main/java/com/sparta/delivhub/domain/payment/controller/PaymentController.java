@@ -63,13 +63,13 @@ public class PaymentController {
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         // 1. 유저 권한 추출
-        String userRole = userDetails.getAuthorities().iterator().next().getAuthority();
+        String currentUserId = userDetails.getUsername();
 
         // 2. 서비스 로직 실행 (상태값 String을 함께 넘겨줍니다)
         ResponsePaymentDTO responseData = paymentService.updatePaymentStatus(
                 paymentId,
                 request.getStatus(),
-                userRole
+                currentUserId
         );
 
         // 3. 공통 응답 규격 반환 (200 OK)
