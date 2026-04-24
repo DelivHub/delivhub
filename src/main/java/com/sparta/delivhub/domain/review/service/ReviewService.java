@@ -74,7 +74,7 @@ public class ReviewService {
                 request.getContent(),
                 request.getImageUrl()
         );
-        Review savedReview = reviewRepository.save(review);
+        Review savedReview = reviewRepository.saveAndFlush(review);
 
         //가게의 평균 별점 갱신
         updateStoreAverageRating(store);

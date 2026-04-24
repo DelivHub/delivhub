@@ -126,11 +126,11 @@ public enum ErrorCode {
     PAYMENT_ALREADY_EXISTS(HttpStatus.BAD_REQUEST,"P006", "이미 결제가 완료된 주문입니다."),
     INVALID_PAYMENT_METHOD(HttpStatus.BAD_REQUEST,"P007", "지원하지 않는 결제 수단입니다."),
     CANNOT_PAY_OWN_STORE(HttpStatus.FORBIDDEN, "P008","본인이 운영하는 가게의 주문은 스스로 결제할 수 없습니다."),
-    PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "P005", "결제 요청 금액이 실제 주문 금액과 일치하지 않습니다."),
+    PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "P010", "결제 요청 금액이 실제 주문 금액과 일치하지 않습니다."),
     CANNOT_CANCEL_PAYMENT(HttpStatus.BAD_REQUEST, "P007", "취소할 수 없는 결제 상태입니다."),
 
-    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "P008", "결제 내역을 찾을 수 없습니다."),
-    INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "P009", "잘못된 입력값입니다."),
+    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "P011", "결제 내역을 찾을 수 없습니다."),
+    INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "P012", "잘못된 입력값입니다."),
 
     // 가게 식별자 에러 (기존 STORE_NOT_FOUND가 있지만 요청하신 메시지로 새로 생성)
     PAYMENT_STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "P015", "해당 storeId가 존재하지 않거나, 이미 삭제된 가게입니다."),
