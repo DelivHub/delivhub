@@ -21,4 +21,7 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     // ✨ 특정 가게의 평균 별점을 계산 (리뷰가 없으면 0.0 반환)
     @Query("SELECT COALESCE(AVG(r.rating), 0.0) FROM Review r WHERE r.store.id = :storeId")
     Double calculateAverageRatingByStoreId(@Param("storeId") UUID storeId);
+
+    // 특정 가게의 리뷰 목록을 페이징하여 조회
+    Page<Review> findAllByStoreId(UUID storeId, Pageable pageable);
 }

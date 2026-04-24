@@ -8,6 +8,7 @@ import com.sparta.delivhub.domain.order.repository.OrderRepository;
 import com.sparta.delivhub.domain.review.dto.*;
 import com.sparta.delivhub.domain.review.entity.Review;
 import com.sparta.delivhub.domain.review.repository.ReviewRepository;
+import com.sparta.delivhub.domain.store.dto.response.StoreReviewPageResponseDto;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.store.repository.StoreRepository;
 import com.sparta.delivhub.domain.user.entity.User;
@@ -208,5 +209,24 @@ public class ReviewService {
 
         // 3. Store 엔티티 업데이트 (더티 체킹 발생)
         store.updateAverageRating(newAverageRating);
+    }
+
+
+    /**
+     * 특정 가게별 리뷰 목록 조회 (평균 평점 포함)
+     */
+    @Transactional(readOnly = true)
+    public StoreReviewPageResponseDto getReviewsByStore(UUID storeId, Pageable pageable) {
+
+        // 1. 가게 존재 여부 확인 및 정보(평균 평점) 가져오기
+        // (명세서 우측의 STORE_NOT_FOUND 404 에러 방어)
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STORE_NOT_FOUND));
+
+        // 2. 해당 가게에 달린 리뷰 목록 페이징 조회
+        Page<Review> reviewPage = reviewRepository.findAllByStoreId(storeId, pageable);
+
+        // 3. DTO 조립 및 반환 (가게에 저장된 평균 평점을 쏙 빼서 같이 넘겨줍니다)
+        return new StoreReviewPageResponseDto(store.getAverageRating(), reviewPage);
     }
 }
