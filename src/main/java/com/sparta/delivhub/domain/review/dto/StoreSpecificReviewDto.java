@@ -1,4 +1,4 @@
-package com.sparta.delivhub.domain.store.dto;
+package com.sparta.delivhub.domain.review.dto;
 
 import com.sparta.delivhub.domain.review.entity.Review;
 import lombok.Getter;
@@ -14,7 +14,6 @@ public class StoreSpecificReviewDto {
 
     public StoreSpecificReviewDto(Review review) {
         this.reviewId = review.getId();
-        // User 엔티티에 존재하는 nickname 필드 활용!
         this.userNickname = review.getUser().getNickname();
         this.rating = review.getRating();
         this.content = review.getContent();

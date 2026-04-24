@@ -6,18 +6,14 @@ import com.sparta.delivhub.domain.area.entity.Area;
 import com.sparta.delivhub.domain.area.repository.AreaRepository;
 import com.sparta.delivhub.domain.category.entity.Category;
 import com.sparta.delivhub.domain.category.repository.CategoryRepository;
-import com.sparta.delivhub.domain.review.entity.Review;
 import com.sparta.delivhub.domain.review.repository.ReviewRepository;
 import com.sparta.delivhub.domain.store.dto.requset.StoreRequestDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreDetailResponseDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreIdResponseDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreListResponseDto;
-import com.sparta.delivhub.domain.store.dto.response.StoreReviewPageResponseDto;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.store.repository.StoreRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

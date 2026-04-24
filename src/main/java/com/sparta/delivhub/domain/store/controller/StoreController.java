@@ -6,15 +6,13 @@ import com.sparta.delivhub.domain.store.dto.requset.StoreRequestDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreDetailResponseDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreIdResponseDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreListResponseDto;
-import com.sparta.delivhub.domain.store.dto.response.StoreReviewPageResponseDto;
-import com.sparta.delivhub.domain.store.repository.StoreRepository;
+import com.sparta.delivhub.domain.review.dto.StoreReviewPageResponseDto;
 import com.sparta.delivhub.domain.store.service.StoreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -58,7 +56,7 @@ public class StoreController {
     /**
      * 특정 가게별 리뷰 조회 (권한: 전체)
      */
-    @GetMapping("/api/v1/stores/{storeId}/reviews")
+    @GetMapping("/stores/{storeId}/reviews")
     public ResponseEntity<ApiResponse<StoreReviewPageResponseDto>> getReviewsByStore(
             @PathVariable UUID storeId,
             @PageableDefault(size = 10, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable

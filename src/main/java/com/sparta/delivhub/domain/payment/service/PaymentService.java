@@ -4,6 +4,7 @@ import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.domain.order.entity.Order;
 import com.sparta.delivhub.domain.order.repository.OrderRepository;
+import com.sparta.delivhub.domain.payment.dto.MyPaymentListResponseDto;
 import com.sparta.delivhub.domain.payment.dto.RequestPaymentDTO;
 import com.sparta.delivhub.domain.payment.dto.ResponsePaymentDTO;
 import com.sparta.delivhub.domain.payment.entity.Payment;
@@ -11,6 +12,8 @@ import com.sparta.delivhub.domain.payment.entity.PaymentMethod;
 import com.sparta.delivhub.domain.payment.entity.PaymentStatus;
 import com.sparta.delivhub.domain.payment.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -149,5 +152,22 @@ public class PaymentService {
         // 4. 안전하게 삭제 처리 (우리가 엔티티에 만든 메서드 호출)
         // repository.delete(payment); (X)
         payment.cancelPayment(currentUserId); // 상태를 DELETED로 바꾸고 deletedAt, deletedBy 기록
+    }
+
+    /**
+     * 내 결제 내역 전체 조회 (페이징)
+     */
+    @Transactional(readOnly = true)
+    public MyPaymentListResponseDto getMyPayments(String currentUserId, String userRole, Pageable pageable) {
+
+        // 1. 권한 검증 (명세서 Auth: CUSTOMER, MANAGER, MASTER)
+        // 3가지 권한 모두 접근 가능하므로, 로그인된 유저라면 누구나 접근 가능합니다.
+        // 만약 특정 권한을 막아야 한다면 여기서 if문으로 필터링합니다.
+
+        // 2. 로그인한 유저의 ID(currentUserId)를 이용해 DB에서 결제 내역 페이징 조회
+        Page<Payment> paymentPage = paymentRepository.findAllByUserId(currentUserId, pageable);
+
+        // 3. DTO로 변환하여 반환
+        return new MyPaymentListResponseDto(paymentPage);
     }
 }

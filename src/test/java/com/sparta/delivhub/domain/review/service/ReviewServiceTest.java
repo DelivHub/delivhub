@@ -8,7 +8,7 @@ import com.sparta.delivhub.domain.order.repository.OrderRepository;
 import com.sparta.delivhub.domain.review.dto.*;
 import com.sparta.delivhub.domain.review.entity.Review;
 import com.sparta.delivhub.domain.review.repository.ReviewRepository;
-import com.sparta.delivhub.domain.store.dto.response.StoreReviewPageResponseDto;
+import com.sparta.delivhub.domain.review.dto.StoreReviewPageResponseDto;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.store.repository.StoreRepository;
 import com.sparta.delivhub.domain.user.entity.User;

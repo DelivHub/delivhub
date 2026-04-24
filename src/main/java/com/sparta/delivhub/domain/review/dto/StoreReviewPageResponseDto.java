@@ -1,7 +1,6 @@
-package com.sparta.delivhub.domain.store.dto.response;
+package com.sparta.delivhub.domain.review.dto;
 
 import com.sparta.delivhub.domain.review.entity.Review;
-import com.sparta.delivhub.domain.store.dto.StoreSpecificReviewDto;
 import lombok.Getter;
 import org.springframework.data.domain.Page;
 

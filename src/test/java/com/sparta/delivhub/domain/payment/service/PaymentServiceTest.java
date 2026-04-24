@@ -4,6 +4,7 @@ import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.domain.order.entity.Order;
 import com.sparta.delivhub.domain.order.repository.OrderRepository;
+import com.sparta.delivhub.domain.payment.dto.MyPaymentListResponseDto;
 import com.sparta.delivhub.domain.payment.dto.RequestPaymentDTO;
 import com.sparta.delivhub.domain.payment.dto.ResponsePaymentDTO;
 import com.sparta.delivhub.domain.payment.entity.Payment;
@@ -15,13 +16,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -270,4 +276,73 @@ class PaymentServiceTest {
         // 에러 코드가 INVALID_REQUEST (또는 설정하신 NOT_FOUND 에러)인지 확인
         assertEquals(ErrorCode.INVALID_REQUEST, exception.getErrorCode());
     }
+
+    // ==========================================
+    // 내 결제 내역 조회 기능 테스트
+    // ==========================================
+
+    @Test
+    @DisplayName("내 결제 내역 조회 성공 - 페이징 처리 및 DTO 변환 확인")
+    void getMyPayments_Success() {
+        // [1] Given
+        String currentUserId = "user123";
+        String userRole = "CUSTOMER";
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // 1. 가짜 결제 내역 2개 생성
+        Payment payment1 = Payment.builder()
+                .amount(25000L)
+                .status(PaymentStatus.COMPLETED) // 💡 프로젝트의 결제 상태 Enum을 사용하세요!
+                .build();
+        ReflectionTestUtils.setField(payment1, "id", UUID.randomUUID());
+        // createdAt은 BaseEntity에서 자동으로 들어가지만, 테스트를 위해 수동 주입
+        ReflectionTestUtils.setField(payment1, "createdAt", LocalDateTime.now());
+
+        Payment payment2 = Payment.builder()
+                .amount(15000L)
+                .status(PaymentStatus.CANCELLED)
+                .build();
+        ReflectionTestUtils.setField(payment2, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(payment2, "createdAt", LocalDateTime.now());
+
+        // 2. 가짜 리포지토리 응답 세팅
+        Page<Payment> paymentPage = new PageImpl<>(List.of(payment1, payment2), pageable, 2);
+        when(paymentRepository.findAllByUserId(currentUserId, pageable)).thenReturn(paymentPage);
+
+        // [2] When
+        MyPaymentListResponseDto response = paymentService.getMyPayments(currentUserId, userRole, pageable);
+
+        // [3] Then
+        assertNotNull(response);
+        assertEquals(2, response.getContent().size()); // 총 2건이 제대로 들어왔는지
+        assertEquals(2, response.getTotalElements());
+        assertEquals(0, response.getPage());
+
+        // 첫 번째 결제 내역 데이터 매핑 검증
+        assertEquals(25000L, response.getContent().get(0).getAmount());
+        assertEquals("COMPLETED", response.getContent().get(0).getStatus()); // Enum -> String 변환 검증
+    }
+
+    @Test
+    @DisplayName("내 결제 내역 조회 성공 - 결제 내역이 하나도 없을 때 빈 리스트 반환")
+    void getMyPayments_Success_EmptyList() {
+        // [1] Given
+        String currentUserId = "user123";
+        String userRole = "CUSTOMER";
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // 텅 빈 페이지 객체 생성
+        Page<Payment> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+
+        when(paymentRepository.findAllByUserId(currentUserId, pageable)).thenReturn(emptyPage);
+
+        // [2] When
+        MyPaymentListResponseDto response = paymentService.getMyPayments(currentUserId, userRole, pageable);
+
+        // [3] Then
+        assertNotNull(response);
+        assertTrue(response.getContent().isEmpty()); // 리스트가 비어있는지 확인
+        assertEquals(0, response.getTotalElements()); // 전체 데이터 개수가 0개인지 확인
+    }
+
 }
