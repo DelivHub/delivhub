@@ -27,7 +27,9 @@ public class PaymentController {
     @PostMapping
     public ResponseEntity<ApiResponse<ResponsePaymentDTO>> createPayment(
             @Valid @RequestBody RequestPaymentDTO request,
-            @RequestHeader("X-User-Id") String currentUserId) {
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String currentUserId = userDetails.getUsername();
 
         // 1. 서비스 로직 실행
         ResponsePaymentDTO responseData = paymentService.createPayment(request, currentUserId);
@@ -79,7 +81,9 @@ public class PaymentController {
     @DeleteMapping("/{paymentId}")
     public ResponseEntity<ApiResponse<Void>> deletePayment(
             @PathVariable UUID paymentId,
-            @RequestHeader("X-User-Id") String currentUserId) {
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String currentUserId = userDetails.getUsername();
 
         paymentService.deletePayment(paymentId, currentUserId);
 
