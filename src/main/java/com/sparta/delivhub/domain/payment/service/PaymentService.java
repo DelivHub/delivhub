@@ -19,6 +19,7 @@ import com.sparta.delivhub.domain.user.entity.User;
 import com.sparta.delivhub.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -103,7 +104,7 @@ public class PaymentService {
         // 2. 권한 검증
         // CUSTOMER(일반 고객)인 경우, 반드시 자신의 결제 내역만 조회할 수 있어야 합니다.
         // MANAGER나 MASTER는 모든 결제 내역을 조회할 수 있도록 예외를 둡니다.
-        if ("CUSTOMER".equals(userRole)) {
+        if ("CUSTOMER".equals(dbRole)) {
             String ownerId = payment.getOrder().getUserId();
             if (!ownerId.equals(currentUserId)) {
                 throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
@@ -182,10 +183,12 @@ public class PaymentService {
      * 내 결제 내역 전체 조회 (페이징)
      */
     @Transactional(readOnly = true)
-    public MyPaymentListResponseDto getMyPayments(String currentUserId, String userRole, Pageable pageable) {
+    public MyPaymentListResponseDto getMyPayments(String currentUserId, Pageable pageable) {
 
         userRepository.findByUsername(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Pageable validatedPageable = validatePageable(pageable);
 
         Page<Payment> paymentPage = paymentRepository.findAllByUserId(currentUserId, pageable);
 
@@ -196,7 +199,7 @@ public class PaymentService {
      * 특정 가게별 결제 목록 조회
      */
     @Transactional(readOnly = true)
-    public StorePaymentListResponseDto getStorePayments(UUID storeId, String currentUserId, String userRole, Pageable pageable) {
+    public StorePaymentListResponseDto getStorePayments(UUID storeId, String currentUserId, Pageable pageable) {
 
         // 보안 강화] DB에서 최신 Role 확인
         User currentUser = userRepository.findByUsername(currentUserId)
@@ -204,7 +207,7 @@ public class PaymentService {
         String dbRole = currentUser.getUserRole().name();
 
         // 1. 일반 고객(CUSTOMER)은 이 API에 절대 접근할 수 없습니다.
-        if ("CUSTOMER".equals(userRole)) {
+        if ("CUSTOMER".equals(dbRole)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
@@ -213,7 +216,7 @@ public class PaymentService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORE_NOT_FOUND));
 
         // 3. OWNER(사장님)일 경우, '본인 가게'가 맞는지 확인
-        if ("OWNER".equals(userRole)) {
+        if ("OWNER".equals(dbRole)) {
             if (!store.getOwner().getUsername().equals(currentUserId)) {
                 // 내 가게가 아니라면 명세서의 STORE_ACCESS_DENIED 에러 발생
                 throw new BusinessException(ErrorCode.STORE_ACCESS_DENIED);
@@ -222,9 +225,22 @@ public class PaymentService {
         // MANAGER나 MASTER는 위 검증을 건너뛰고 모든 가게의 결제 내역을 볼 수 있습니다.
 
         // 4. 권한 검증을 통과했다면, 가게 ID로 결제 내역 페이징 조회
+        Pageable validatedPageable = validatePageable(pageable);
         Page<Payment> paymentPage = paymentRepository.findAllByStoreId(storeId, pageable);
 
         // 5. DTO로 변환하여 반환
         return new StorePaymentListResponseDto(paymentPage);
+    }
+
+    // ==========================================
+    //  헬퍼 메서드: 페이징 사이즈 검증 (10, 30, 50 고정)
+    // ==========================================
+    private Pageable validatePageable(Pageable pageable) {
+        int size = pageable.getPageSize();
+        if (size != 10 && size != 30 && size != 50) {
+            size = 10; // 허용되지 않은 값이면 기본값 10으로 강제 조정
+        }
+        // 정렬 조건(Sort)은 유지하면서 사이즈만 변경하여 새로운 PageRequest 반환
+        return PageRequest.of(pageable.getPageNumber(), size, pageable.getSort());
     }
 }

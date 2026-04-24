@@ -290,7 +290,7 @@ class PaymentServiceTest {
         when(paymentRepository.findAllByUserId(currentUserId, pageable)).thenReturn(paymentPage);
 
         // [2] When
-        MyPaymentListResponseDto response = paymentService.getMyPayments(currentUserId, userRole, pageable);
+        MyPaymentListResponseDto response = paymentService.getMyPayments(currentUserId, pageable);
 
         // [3] Then
         assertNotNull(response);
@@ -317,7 +317,7 @@ class PaymentServiceTest {
         when(paymentRepository.findAllByUserId(currentUserId, pageable)).thenReturn(emptyPage);
 
         // [2] When
-        MyPaymentListResponseDto response = paymentService.getMyPayments(currentUserId, userRole, pageable);
+        MyPaymentListResponseDto response = paymentService.getMyPayments(currentUserId, pageable);
 
         // [3] Then
         assertNotNull(response);
@@ -357,7 +357,7 @@ class PaymentServiceTest {
         when(paymentRepository.findAllByStoreId(storeId, pageable)).thenReturn(paymentPage);
 
         // [2] When
-        StorePaymentListResponseDto response = paymentService.getStorePayments(storeId, currentUserId, userRole, pageable);
+        StorePaymentListResponseDto response = paymentService.getStorePayments(storeId, currentUserId, pageable);
 
         // [3] Then
         assertNotNull(response);
@@ -386,7 +386,7 @@ class PaymentServiceTest {
         when(paymentRepository.findAllByStoreId(storeId, pageable)).thenReturn(Page.empty());
 
         // [2] & [3]
-        assertDoesNotThrow(() -> paymentService.getStorePayments(storeId, currentUserId, userRole, pageable));
+        assertDoesNotThrow(() -> paymentService.getStorePayments(storeId, currentUserId, pageable));
     }
 
     @Test
@@ -404,7 +404,7 @@ class PaymentServiceTest {
 
         // [2] & [3]
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> paymentService.getStorePayments(storeId, currentUserId, userRole, pageable));
+                () -> paymentService.getStorePayments(storeId, currentUserId, pageable));
 
         assertEquals(ErrorCode.ACCESS_DENIED, exception.getErrorCode());
     }
@@ -429,7 +429,7 @@ class PaymentServiceTest {
 
         // [2] & [3]
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> paymentService.getStorePayments(storeId, currentUserId, userRole, pageable));
+                () -> paymentService.getStorePayments(storeId, currentUserId, pageable));
 
         assertEquals(ErrorCode.STORE_ACCESS_DENIED, exception.getErrorCode());
     }

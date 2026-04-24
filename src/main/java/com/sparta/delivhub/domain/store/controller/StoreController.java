@@ -83,10 +83,9 @@ public class StoreController {
     ) {
         // 1. 유저 정보 및 권한 추출
         String currentUserId = userDetails.getUsername();
-        String userRole = userDetails.getAuthorities().iterator().next().getAuthority();
 
         // 2. 서비스 로직 호출 (결제 내역 조회이므로 PaymentService 사용)
-        StorePaymentListResponseDto responseData = paymentService.getStorePayments(storeId, currentUserId, userRole, pageable);
+        StorePaymentListResponseDto responseData = paymentService.getStorePayments(storeId, currentUserId, pageable);
 
         // 3. 성공 응답 반환 (200 OK)
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responseData));

@@ -31,10 +31,9 @@ public class UserController {
     ) {
         // 1. 시큐리티 토큰에서 로그인한 유저 정보 추출
         String currentUserId = userDetails.getUsername();
-        String userRole = userDetails.getAuthorities().iterator().next().getAuthority();
 
         // 2. 서비스 로직 호출
-        MyPaymentListResponseDto responseData = paymentService.getMyPayments(currentUserId, userRole, pageable);
+        MyPaymentListResponseDto responseData = paymentService.getMyPayments(currentUserId, pageable);
 
         // 3. 성공 응답 반환 (200 OK)
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responseData));
