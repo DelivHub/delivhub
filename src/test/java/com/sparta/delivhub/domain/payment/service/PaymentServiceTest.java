@@ -7,9 +7,13 @@ import com.sparta.delivhub.domain.order.repository.OrderRepository;
 import com.sparta.delivhub.domain.payment.dto.MyPaymentListResponseDto;
 import com.sparta.delivhub.domain.payment.dto.RequestPaymentDTO;
 import com.sparta.delivhub.domain.payment.dto.ResponsePaymentDTO;
+import com.sparta.delivhub.domain.payment.dto.StorePaymentListResponseDto;
 import com.sparta.delivhub.domain.payment.entity.Payment;
 import com.sparta.delivhub.domain.payment.entity.PaymentStatus;
 import com.sparta.delivhub.domain.payment.repository.PaymentRepository;
+import com.sparta.delivhub.domain.store.entity.Store;
+import com.sparta.delivhub.domain.store.repository.StoreRepository;
+import com.sparta.delivhub.domain.user.entity.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +46,9 @@ class PaymentServiceTest {
 
     @InjectMocks
     private PaymentService paymentService; // 주인공: 가짜 조연들을 주입받은 실제 서비스
+
+    @Mock
+    private StoreRepository storeRepository;
 
     @Test
     @DisplayName("결제 생성 성공 테스트")
@@ -344,5 +351,110 @@ class PaymentServiceTest {
         assertTrue(response.getContent().isEmpty()); // 리스트가 비어있는지 확인
         assertEquals(0, response.getTotalElements()); // 전체 데이터 개수가 0개인지 확인
     }
+// ==========================================
+    // 가게별 결제 목록 조회 기능 테스트
+    // ==========================================
 
+    @Test
+    @DisplayName("가게별 결제 조회 성공 - 사장님(OWNER)이 본인 가게 조회")
+    void getStorePayments_Success_Owner() {
+        // [1] Given
+        UUID storeId = UUID.randomUUID();
+        String currentUserId = "owner123";
+        String userRole = "OWNER";
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // 1. 가게 및 사장님 세팅
+        User owner = User.builder().username(currentUserId).build();
+        Store store = Store.builder().owner(owner).build();
+        ReflectionTestUtils.setField(store, "id", storeId);
+
+        // 2. 결제 내역 세팅 (DTO에서 order.getId()를 호출하므로 Order 객체도 필요!)
+        // Order 엔티티 패키지 경로에 맞게 임포트 필요합니다.
+        com.sparta.delivhub.domain.order.entity.Order fakeOrder = com.sparta.delivhub.domain.order.entity.Order.builder().build();
+        ReflectionTestUtils.setField(fakeOrder, "id", UUID.randomUUID());
+
+        Payment payment = Payment.builder()
+                .amount(15000L)
+                .status(PaymentStatus.COMPLETED)
+                .build();
+        ReflectionTestUtils.setField(payment, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(payment, "createdAt", LocalDateTime.now());
+        ReflectionTestUtils.setField(payment, "order", fakeOrder); // ✨ 핵심: Payment에 Order 주입
+
+        // 3. Mock 대본 작성
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        Page<Payment> paymentPage = new PageImpl<>(List.of(payment), pageable, 1);
+        when(paymentRepository.findAllByStoreId(storeId, pageable)).thenReturn(paymentPage);
+
+        // [2] When
+        // 예외 없이 정상적으로 DTO가 반환되는지 실행
+        StorePaymentListResponseDto response = paymentService.getStorePayments(storeId, currentUserId, userRole, pageable);
+
+        // [3] Then
+        assertNotNull(response);
+        assertEquals(1, response.getContent().size());
+        assertEquals(15000L, response.getContent().get(0).getAmount());
+        assertNotNull(response.getContent().get(0).getOrderId()); // DTO에 orderId가 잘 들어갔는지 확인
+    }
+
+    @Test
+    @DisplayName("가게별 결제 조회 성공 - 관리자(MASTER)는 모든 가게 프리패스 조회")
+    void getStorePayments_Success_Master() {
+        // [1] Given
+        UUID storeId = UUID.randomUUID();
+        String currentUserId = "admin_master";
+        String userRole = "MASTER";
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // 관리자는 남의 가게라도 상관없이 조회 가능해야 함
+        User otherOwner = User.builder().username("other_owner_999").build();
+        Store store = Store.builder().owner(otherOwner).build();
+
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        when(paymentRepository.findAllByStoreId(storeId, pageable)).thenReturn(Page.empty()); // 결과가 없어도 로직 통과만 확인
+
+        // [2] When & [3] Then
+        // 에러가 터지지 않고 정상적으로 빈 페이지가 반환되면 성공!
+        assertDoesNotThrow(() -> paymentService.getStorePayments(storeId, currentUserId, userRole, pageable));
+    }
+
+    @Test
+    @DisplayName("가게별 결제 조회 실패 - 일반 고객(CUSTOMER)의 접근 원천 차단 (403 방어)")
+    void getStorePayments_Fail_Customer() {
+        // [1] Given
+        UUID storeId = UUID.randomUUID();
+        String currentUserId = "customer123";
+        String userRole = "CUSTOMER"; // 차단 대상 권한
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // [2] When & [3] Then
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> paymentService.getStorePayments(storeId, currentUserId, userRole, pageable));
+
+        assertEquals(ErrorCode.ACCESS_DENIED, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("가게별 결제 조회 실패 - 다른 사장님의 가게를 조회하려 할 때 (S003 방어)")
+    void getStorePayments_Fail_WrongOwner() {
+        // [1] Given
+        UUID storeId = UUID.randomUUID();
+        String currentUserId = "hacker_owner"; // 현재 로그인한 엉뚱한 사장님
+        String userRole = "OWNER";
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // 해당 가게의 진짜 주인
+        User realOwner = User.builder().username("real_owner_777").build();
+        Store store = Store.builder().owner(realOwner).build();
+
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+
+        // [2] When & [3] Then
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> paymentService.getStorePayments(storeId, currentUserId, userRole, pageable));
+
+        // 아까 새로 만들었던 STORE_ACCESS_DENIED 에러가 정확히 터지는지 확인
+        assertEquals(ErrorCode.STORE_ACCESS_DENIED, exception.getErrorCode());
+    }
 }

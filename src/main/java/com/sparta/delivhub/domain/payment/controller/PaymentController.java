@@ -1,10 +1,7 @@
 package com.sparta.delivhub.domain.payment.controller;
 
 import com.sparta.delivhub.common.dto.ApiResponse;
-import com.sparta.delivhub.domain.payment.dto.MyPaymentListResponseDto;
-import com.sparta.delivhub.domain.payment.dto.RequestPaymentDTO;
-import com.sparta.delivhub.domain.payment.dto.RequestUpdatePaymentStatusDTO;
-import com.sparta.delivhub.domain.payment.dto.ResponsePaymentDTO;
+import com.sparta.delivhub.domain.payment.dto.*;
 import com.sparta.delivhub.domain.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -89,6 +86,24 @@ public class PaymentController {
         // 데이터가 없는 200 OK 응답
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success());
     }
+    /**
+     * 가게별 결제 목록 조회 (권한: OWNER, MANAGER, MASTER)
+     */
+    @GetMapping("/api/v1/stores/{storeId}/payments")
+    public ResponseEntity<ApiResponse<StorePaymentListResponseDto>> getStorePayments(
+            @PathVariable UUID storeId,
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PageableDefault(size = 10, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable
+    ) {
+        // 1. 유저 정보 및 권한 추출
+        String currentUserId = userDetails.getUsername();
+        String userRole = userDetails.getAuthorities().iterator().next().getAuthority();
 
+        // 2. 서비스 로직 호출 (결제 내역 조회이므로 PaymentService 사용)
+        StorePaymentListResponseDto responseData = paymentService.getStorePayments(storeId, currentUserId, userRole, pageable);
+
+        // 3. 성공 응답 반환 (200 OK)
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responseData));
+    }
 
 }

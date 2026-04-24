@@ -7,10 +7,13 @@ import com.sparta.delivhub.domain.order.repository.OrderRepository;
 import com.sparta.delivhub.domain.payment.dto.MyPaymentListResponseDto;
 import com.sparta.delivhub.domain.payment.dto.RequestPaymentDTO;
 import com.sparta.delivhub.domain.payment.dto.ResponsePaymentDTO;
+import com.sparta.delivhub.domain.payment.dto.StorePaymentListResponseDto;
 import com.sparta.delivhub.domain.payment.entity.Payment;
 import com.sparta.delivhub.domain.payment.entity.PaymentMethod;
 import com.sparta.delivhub.domain.payment.entity.PaymentStatus;
 import com.sparta.delivhub.domain.payment.repository.PaymentRepository;
+import com.sparta.delivhub.domain.store.entity.Store;
+import com.sparta.delivhub.domain.store.repository.StoreRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,7 +27,8 @@ import java.util.UUID;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
-    private final OrderRepository orderRepository; // 주문 확인을 위해 필요
+    private final OrderRepository orderRepository;
+    private final StoreRepository storeRepository;
 
     @Transactional
     public ResponsePaymentDTO createPayment(RequestPaymentDTO request, String currentUserId) {
@@ -169,5 +173,36 @@ public class PaymentService {
 
         // 3. DTO로 변환하여 반환
         return new MyPaymentListResponseDto(paymentPage);
+    }
+
+    /**
+     * 특정 가게별 결제 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public StorePaymentListResponseDto getStorePayments(UUID storeId, String currentUserId, String userRole, Pageable pageable) {
+
+        // 1. 일반 고객(CUSTOMER)은 이 API에 절대 접근할 수 없습니다.
+        if ("CUSTOMER".equals(userRole)) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+
+        // 2. 가게 존재 여부 확인
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STORE_NOT_FOUND));
+
+        // 3. OWNER(사장님)일 경우, '본인 가게'가 맞는지 확인
+        if ("OWNER".equals(userRole)) {
+            if (!store.getOwner().getUsername().equals(currentUserId)) {
+                // 내 가게가 아니라면 명세서의 STORE_ACCESS_DENIED 에러 발생
+                throw new BusinessException(ErrorCode.STORE_ACCESS_DENIED);
+            }
+        }
+        // MANAGER나 MASTER는 위 검증을 건너뛰고 모든 가게의 결제 내역을 볼 수 있습니다.
+
+        // 4. 권한 검증을 통과했다면, 가게 ID로 결제 내역 페이징 조회
+        Page<Payment> paymentPage = paymentRepository.findAllByStoreId(storeId, pageable);
+
+        // 5. DTO로 변환하여 반환
+        return new StorePaymentListResponseDto(paymentPage);
     }
 }
