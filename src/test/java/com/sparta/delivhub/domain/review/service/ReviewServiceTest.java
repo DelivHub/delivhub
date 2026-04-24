@@ -8,6 +8,7 @@ import com.sparta.delivhub.domain.order.repository.OrderRepository;
 import com.sparta.delivhub.domain.review.dto.*;
 import com.sparta.delivhub.domain.review.entity.Review;
 import com.sparta.delivhub.domain.review.repository.ReviewRepository;
+import com.sparta.delivhub.domain.store.dto.response.StoreReviewPageResponseDto;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.store.repository.StoreRepository;
 import com.sparta.delivhub.domain.user.entity.User;
@@ -268,39 +269,44 @@ class ReviewServiceTest {
     // ==========================================
 
     @Test
-    @DisplayName("리뷰 수정 성공 - 본인이 작성한 리뷰 수정")
+    @DisplayName("리뷰 수정 성공 - 본인이 작성한 리뷰 수정 (평균 평점 갱신 포함)")
     void updateReview_Success() {
         // [1] Given
         UUID reviewId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID(); // ✨ 가게 ID 추가
         String currentUserId = "user123";
         String userRole = "CUSTOMER";
 
-        // 수정할 내용이 담긴 Request DTO
         ReviewUpdateRequestDto request = ReviewUpdateRequestDto.builder()
                 .rating(4)
                 .content("다시 먹어보니 조금 짜네요. 그래도 맛있습니다.")
                 .build();
 
-        // 진짜 주인(user123) 객체 생성
         User owner = User.builder().username("user123").build();
 
-        // 기존에 작성되어 있던 가짜 리뷰 객체 생성 (수정 전 상태: 5점, "완벽해요")
+        // ✨ 가짜 가게 생성 및 ID 주입
+        Store store = Store.builder().build();
+        ReflectionTestUtils.setField(store, "id", storeId);
+
+        // ✨ 리뷰에 가게(store) 쏙 넣어주기
         Review myReview = Review.builder()
                 .user(owner)
+                .store(store)
                 .rating(5)
                 .content("완벽해요!")
                 .build();
         ReflectionTestUtils.setField(myReview, "id", reviewId);
 
-        // 레포지토리 대본: "reviewId로 찾으면 myReview를 줘라"
         when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(myReview));
+
+        // 평균 별점 계산 쿼리가 돌면 4.0을 반환해라
+        when(reviewRepository.calculateAverageRatingByStoreId(storeId)).thenReturn(4.0);
 
         // [2] When
         ReviewResponseDto response = reviewService.updateReview(reviewId, request, currentUserId, userRole);
 
         // [3] Then
         assertNotNull(response);
-        // 별점과 내용이 request 대로 잘 바뀌었는지(더티 체킹 업데이트) 확인
         assertEquals(4, response.getRating());
         assertEquals("다시 먹어보니 조금 짜네요. 그래도 맛있습니다.", response.getContent());
     }
@@ -368,76 +374,80 @@ class ReviewServiceTest {
     // ==========================================
 
     @Test
-    @DisplayName("리뷰 삭제 성공 - 본인(CUSTOMER)이 작성한 리뷰 삭제")
+    @DisplayName("리뷰 삭제 성공 - 본인(CUSTOMER)이 작성한 리뷰 삭제 (평균 평점 갱신 포함)")
     void deleteReview_Success_Customer() {
         // [1] Given
         UUID reviewId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
         String currentUserId = "user123";
         String userRole = "CUSTOMER";
 
         User owner = User.builder().username("user123").build();
-        Review myReview = Review.builder().user(owner).build();
+
+        Store store = Store.builder().build();
+        ReflectionTestUtils.setField(store, "id", storeId);
+
+        Review myReview = Review.builder().user(owner).store(store).build(); // ✨ store 추가
         ReflectionTestUtils.setField(myReview, "id", reviewId);
 
         when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(myReview));
+        when(reviewRepository.calculateAverageRatingByStoreId(storeId)).thenReturn(0.0); // ✨ 대본 추가
 
         // [2] When
         reviewService.deleteReview(reviewId, currentUserId, userRole);
 
         // [3] Then
-        // 소프트 딜리트 필드가 잘 채워졌는지 확인
         assertNotNull(myReview.getDeletedAt());
         assertEquals("user123", myReview.getDeletedBy());
     }
 
     @Test
-    @DisplayName("리뷰 삭제 성공 - 가게 주인(OWNER)이 본인 가게 리뷰 삭제 (Store, User 엔티티 완벽 반영)")
+    @DisplayName("리뷰 삭제 성공 - 가게 주인(OWNER)이 본인 가게 리뷰 삭제 (평균 평점 갱신 포함)")
     void deleteReview_Success_Owner() {
         // [1] Given
         UUID reviewId = UUID.randomUUID();
-        String ownerId = "owner777"; // 현재 로그인한 사장님 ID
+        UUID storeId = UUID.randomUUID();
+        String ownerId = "owner777";
         String userRole = "OWNER";
 
-        // 1. 진짜 사장님(User) 객체 생성
         User storeOwner = User.builder().username(ownerId).build();
 
-        // 2. 가게(Store) 객체 생성 시, owner 필드에 사장님 객체를 쏙 넣어줍니다.
         Store myStore = Store.builder().owner(storeOwner).build();
+        ReflectionTestUtils.setField(myStore, "id", storeId); // ✨ 가게 ID 꼼꼼하게 추가
 
-        // 3. 손님(User) 객체 생성 (이 리뷰를 쓴 사람)
         User customer = User.builder().username("customer1").build();
-
-        // 4. 리뷰(Review) 객체 조립
-        Review review = Review.builder()
-                .user(customer) // 작성자는 손님
-                .store(myStore) // 작성된 가게는 위에서 만든 내 가게
-                .build();
+        Review review = Review.builder().user(customer).store(myStore).build();
         ReflectionTestUtils.setField(review, "id", reviewId);
 
         when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(review));
+        when(reviewRepository.calculateAverageRatingByStoreId(storeId)).thenReturn(4.5); // ✨ 대본 추가
 
         // [2] When
-        // 사장님이 삭제를 시도합니다.
         reviewService.deleteReview(reviewId, ownerId, userRole);
 
         // [3] Then
-        // 권한 에러(403) 없이 무사히 넘어왔고, 삭제 시간이 기록되었는지 확인
         assertNotNull(review.getDeletedAt());
         assertEquals(ownerId, review.getDeletedBy());
     }
 
     @Test
-    @DisplayName("리뷰 삭제 성공 - 관리자(MASTER)의 강제 삭제")
+    @DisplayName("리뷰 삭제 성공 - 관리자(MASTER)의 강제 삭제 (평균 평점 갱신 포함)")
     void deleteReview_Success_Master() {
         // [1] Given
         UUID reviewId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
         String adminId = "admin_master";
         String userRole = "MASTER";
 
+        Store store = Store.builder().build();
+        ReflectionTestUtils.setField(store, "id", storeId);
+
         User customer = User.builder().username("user1").build();
-        Review review = Review.builder().user(customer).build();
+        Review review = Review.builder().user(customer).store(store).build(); // ✨ store 추가
+        ReflectionTestUtils.setField(review, "id", reviewId);
 
         when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(review));
+        when(reviewRepository.calculateAverageRatingByStoreId(storeId)).thenReturn(3.5); // ✨ 대본 추가
 
         // [2] When
         reviewService.deleteReview(reviewId, adminId, userRole);
@@ -481,5 +491,81 @@ class ReviewServiceTest {
                 () -> reviewService.deleteReview(reviewId, "user1", "CUSTOMER"));
 
         assertEquals(ErrorCode.REVIEW_NOT_FOUND, exception.getErrorCode());
+    }
+
+    // ==========================================
+    // 6. 특정 가게별 리뷰 조회 (평균 평점 포함) 기능 테스트
+    // ==========================================
+
+    @Test
+    @DisplayName("가게별 리뷰 조회 성공 - 가게의 평균 평점과 리뷰 목록 반환 (N+1 방지 확인)")
+    void getReviewsByStore_Success() {
+        // [1] Given (준비)
+        UUID storeId = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // 1. 가게(Store) 객체 생성 및 캐싱된 평균 평점(4.8) 강제 세팅
+        User owner = User.builder().username("owner123").build();
+        Store store = Store.builder()
+                .owner(owner)
+                .averageRating(new java.math.BigDecimal("4.8")) // 👈 핵심: 미리 계산된 평점 세팅
+                .build();
+        ReflectionTestUtils.setField(store, "id", storeId);
+
+        // 2. 리뷰 작성자(고객) 객체 생성 (닉네임 포함)
+        User customer = User.builder()
+                .username("user123")
+                .nickname("맛있는녀석들")
+                .build();
+
+        // 3. 가짜 리뷰 객체 생성
+        Review review1 = Review.builder()
+                .user(customer)
+                .store(store)
+                .rating(5)
+                .content("최고예요!")
+                .build();
+        ReflectionTestUtils.setField(review1, "id", UUID.randomUUID());
+
+        // 4. 모킹 대본 작성
+        // "가게 ID로 찾으면, 평점이 4.8인 가게를 반환해!"
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+
+        // "해당 가게의 리뷰를 찾으면, review1이 담긴 페이지를 반환해!"
+        Page<Review> reviewPage = new PageImpl<>(List.of(review1), pageable, 1);
+        when(reviewRepository.findAllByStoreId(storeId, pageable)).thenReturn(reviewPage);
+
+        // [2] When (실행)
+        // 권한이 "전체"인 API이므로 파라미터가 깔끔합니다.
+        StoreReviewPageResponseDto response = reviewService.getReviewsByStore(storeId, pageable);
+
+        // [3] Then (검증)
+        assertNotNull(response);
+
+        // ✨ 가장 중요한 검증: Store 엔티티에 있던 4.8점이 응답 최상단에 잘 매핑되었는가?
+        assertEquals(new java.math.BigDecimal("4.8"), response.getAverageRating());
+
+        // 페이징 및 리뷰 데이터 검증
+        assertEquals(1, response.getContent().size());
+        assertEquals("맛있는녀석들", response.getContent().get(0).getUserNickname());
+        assertEquals("최고예요!", response.getContent().get(0).getContent());
+    }
+
+    @Test
+    @DisplayName("가게별 리뷰 조회 실패 - 존재하지 않는 가게 ID를 입력했을 때 (404 방어)")
+    void getReviewsByStore_Fail_StoreNotFound() {
+        // [1] Given
+        UUID fakeStoreId = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // "DB에서 아무것도 찾지 못함" 연출
+        when(storeRepository.findById(fakeStoreId)).thenReturn(Optional.empty());
+
+        // [2] When & [3] Then
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> reviewService.getReviewsByStore(fakeStoreId, pageable));
+
+        // STORE_NOT_FOUND (S001) 에러가 정확히 터지는지 확인
+        assertEquals(ErrorCode.STORE_NOT_FOUND, exception.getErrorCode());
     }
 }
