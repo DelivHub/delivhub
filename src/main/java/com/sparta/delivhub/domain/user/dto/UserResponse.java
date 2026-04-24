@@ -17,6 +17,7 @@ public class UserResponse {
     private String email;
     private String nickname;
     private UserRole role;
+    private Boolean isPublic;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -26,6 +27,7 @@ public class UserResponse {
                 .nickname(user.getNickname())
                 .email(user.getEmail())
                 .role(user.getUserRole())
+                .isPublic(user.getIsPublic())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
