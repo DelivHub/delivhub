@@ -30,11 +30,6 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
-    private static final String[] PUBLIC_URLS = {
-            "/api/v1/auth/signup",
-            "/api/v1/auth/login"
-    };
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
         http
@@ -46,7 +41,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth->auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(PUBLIC_URLS).permitAll()
+                        .requestMatchers("/api/v1/auth/signup", "/api/v1/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users").hasAnyRole("MANAGER", "MASTER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/users/*").hasAnyRole("MANAGER", "MASTER")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/*/role").hasRole("MASTER")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

@@ -39,6 +39,6 @@ public class SignupRequest {
     )
     private String email;
 
-    @NotNull(message = "역할은 필수입니다.")
+    @NotNull(message = "권한은 필수입니다.")
     private UserRole role;
 }

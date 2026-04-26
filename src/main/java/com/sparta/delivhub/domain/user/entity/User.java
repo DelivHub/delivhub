@@ -32,4 +32,29 @@ public class User extends BaseEntity {
     @Column(name = "is_public", nullable = false)
     @Builder.Default
     private Boolean isPublic = true;
+
+    public void updateUser(String nickname, String email, Boolean isPublic) {
+        if (nickname != null) {
+            this.nickname = nickname;
+        }
+
+        if (email != null) {
+            this.email = email;
+        }
+
+        if (isPublic != null) {
+            this.isPublic = isPublic;
+        }
+    }
+
+    public void updateRole(UserRole userRole) {
+        if (userRole != null) {
+            this.userRole = userRole;
+        }
+    }
+
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
 }
