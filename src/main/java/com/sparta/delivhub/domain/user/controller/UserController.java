@@ -29,8 +29,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.PushbackReader;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
@@ -88,7 +86,7 @@ public class UserController {
             @PathVariable String username,
             @RequestBody UpdateUserRequest request
     ) {
-        UserResponse response = userService.updateUserInfo(username, request);
+        UserResponse response = userService.updateUser(username, request);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -101,7 +99,7 @@ public class UserController {
             @PathVariable String username,
             @RequestBody UpdateRoleRequest request
     ) {
-        UserResponse response = userService.updateUserRole(username, request);
+        UserResponse response = userService.updateRole(username, request);
 
         return ResponseEntity
                 .status(HttpStatus.OK)

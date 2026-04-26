@@ -77,7 +77,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse updateUserInfo(String username, UpdateUserRequest request) {
+    public UserResponse updateUser(String username, UpdateUserRequest request) {
         User user = findUserByUsername(username);
 
         boolean nicknameUnchanged = request.getNickname() == null
@@ -105,7 +105,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse updateUserRole(String username, UpdateRoleRequest request) {
+    public UserResponse updateRole(String username, UpdateRoleRequest request) {
         User user = findUserByUsername(username);
         user.updateRole(request.getRole());
         return UserResponse.from(user);
