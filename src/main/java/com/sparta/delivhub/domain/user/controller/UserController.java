@@ -9,9 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import com.sparta.delivhub.common.dto.ApiResponse;
 import com.sparta.delivhub.common.dto.PageResponse;
 import com.sparta.delivhub.domain.user.dto.UpdatePasswordRequest;
 import com.sparta.delivhub.domain.user.dto.UpdateRoleRequest;
@@ -20,13 +18,8 @@ import com.sparta.delivhub.domain.user.dto.UserResponse;
 import com.sparta.delivhub.domain.user.service.UserService;
 import com.sparta.delivhub.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
