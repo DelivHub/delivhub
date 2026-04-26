@@ -1,5 +1,7 @@
 package com.sparta.delivhub.domain.address.service;
 
+import com.sparta.delivhub.common.dto.BusinessException;
+import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.common.dto.PageResponse;
 import com.sparta.delivhub.domain.address.dto.AddressResponse;
 import com.sparta.delivhub.domain.address.dto.AddressRequest;
@@ -24,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -146,11 +149,37 @@ class AddressServiceTest {
     }
 
     @Test
+    @DisplayName("배송지_조회_실패_존재X")
+    void getAddress_fail_notFound() {
+        // given
+        given(addressRepository.findById(addressId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> addressService.getAddress("user01", addressId))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.ADDRESS_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("배송지_조회_실패_타인_배송지")
+    void getAddress_fail_accessDenied() {
+        // given
+        given(addressRepository.findById(addressId)).willReturn(Optional.of(address));
+
+        // when & then
+        assertThatThrownBy(() -> addressService.getAddress("other01", addressId))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.ACCESS_DENIED);
+    }
+
+    @Test
     @DisplayName("배송지_수정_성공")
     void updateAddress_success() {
         // given
         UpdateAddressRequest request = mock(UpdateAddressRequest.class);
-        given(request.getAlias()).willReturn("자취방");        // 별칭 변경
+        given(request.getAlias()).willReturn("자취방");
         given(request.getAddress()).willReturn("서울시 종로구 세종대로 172");
         given(request.getDetail()).willReturn("101동 1001호");
         given(request.getZipCode()).willReturn("03154");
@@ -163,6 +192,25 @@ class AddressServiceTest {
         // then
         assertThat(response.getAlias()).isEqualTo("자취방");
         assertThat(response.getUserId()).isEqualTo("user01");
+    }
+
+    @Test
+    @DisplayName("배송지_수정_실패_변경사항_없음")
+    void updateAddress_fail_noChanges() {
+        // given
+        UpdateAddressRequest request = mock(UpdateAddressRequest.class);
+        given(request.getAlias()).willReturn("집");
+        given(request.getAddress()).willReturn("서울시 종로구 세종대로 172");
+        given(request.getDetail()).willReturn("101동 1001호");
+        given(request.getZipCode()).willReturn("03154");
+
+        given(addressRepository.findById(addressId)).willReturn(Optional.of(address));
+
+        // when & then
+        assertThatThrownBy(() -> addressService.updateAddress("user01", addressId, request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.NO_CHANGES_DETECTED);
     }
 
     @Test
@@ -206,6 +254,20 @@ class AddressServiceTest {
 
         // then
         assertThat(otherAddress.getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("배송지_삭제_실패_이미_삭제된_배송지")
+    void deleteAddress_fail_alreadyDeleted() {
+        // given
+        address.softDelete("user01");
+        given(addressRepository.findById(addressId)).willReturn(Optional.of(address));
+
+        // when & then
+        assertThatThrownBy(() -> addressService.deleteAddress(addressId, "user01", UserRole.CUSTOMER))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.ALREADY_DELETED_ADDRESS);
     }
 
     @Test
@@ -260,7 +322,7 @@ class AddressServiceTest {
 
         // then
         assertThat(response.getIsDefault()).isFalse();
-        verify(addressRepository, never())  // false 설정 시 기존 기본 배송지 초기화 불필요
+        verify(addressRepository, never())
                 .findByUserAndIsDefaultTrueAndDeletedAtIsNull(any());
     }
 }
