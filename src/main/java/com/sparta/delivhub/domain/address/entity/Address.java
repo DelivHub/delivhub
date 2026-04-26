@@ -24,13 +24,13 @@ public class Address extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, length = 50)
+    @Column(length = 50)
     private String alias;
 
-    @Column(nullable = false, length = 200)
+    @Column(nullable = false)
     private String address;
 
-    @Column(nullable = false, length = 200)
+    @Column(nullable = false)
     private String detail;
 
     @Column(nullable = false, length = 10)
@@ -41,13 +41,26 @@ public class Address extends BaseEntity {
     private Boolean isDefault = false;
 
     public void updateAddress(String alias, String address, String detail, String zipCode) {
-        this.alias = alias;
-        this.address = address;
-        this.detail = detail;
-        this.zipCode = zipCode;
+        if (alias != null) {
+            this.alias = alias;
+        }
+
+        if (address != null) {
+            this.address = address;
+        }
+
+        if (detail != null) {
+            this.detail = detail;
+        }
+
+        if (zipCode != null) {
+            this.zipCode = zipCode;
+        }
     }
 
     public void changeDefault(Boolean isDefault) {
-        this.isDefault = isDefault;
+        if (isDefault != null) {
+            this.isDefault = isDefault;
+        }
     }
 }
