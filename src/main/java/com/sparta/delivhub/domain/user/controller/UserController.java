@@ -3,6 +3,7 @@ package com.sparta.delivhub.domain.user.controller;
 import com.sparta.delivhub.common.dto.ApiResponse;
 import com.sparta.delivhub.domain.payment.dto.MyPaymentListResponseDto;
 import com.sparta.delivhub.domain.payment.service.PaymentService;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -77,7 +78,7 @@ public class UserController {
     @PutMapping("/{username}")
     public ResponseEntity<ApiResponse<UserResponse>> updateUser(
             @PathVariable String username,
-            @RequestBody UpdateUserRequest request
+            @Valid @RequestBody UpdateUserRequest request
     ) {
         UserResponse response = userService.updateUser(username, request);
 
@@ -90,7 +91,7 @@ public class UserController {
     @PutMapping("/{username}/role")
     public ResponseEntity<ApiResponse<UserResponse>> updateRole(
             @PathVariable String username,
-            @RequestBody UpdateRoleRequest request
+            @Valid @RequestBody UpdateRoleRequest request
     ) {
         UserResponse response = userService.updateRole(username, request);
 
@@ -103,7 +104,7 @@ public class UserController {
     @PutMapping("/{username}/password")
     public ResponseEntity<ApiResponse<Void>> updatePassword(
             @PathVariable String username,
-            @RequestBody UpdatePasswordRequest request
+            @Valid @RequestBody UpdatePasswordRequest request
     ) {
         userService.updatePassword(username, request);
 
