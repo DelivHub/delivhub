@@ -117,7 +117,7 @@ public enum ErrorCode {
 
     // 11. Payment (결제 로직)
     PAYMENT_VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "P001", "결제 금액은 0원보다 커야 하거나, 지원하지 않는 결제 수단입니다."),
-    PAYMENT_BAD_REQUEST(HttpStatus.BAD_REQUEST, "P002", "이미 삭제 처리된 결제 내역입니다."),
+    PAYMENT_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST, "P002", "이미 삭제 처리된 결제 내역입니다."),
 
     STORE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P003", "해당 가게의 관리자(MANAGER) 또는 마스터(MASTER) 권한이 필요합니다."),
     PAYMENT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P004", "본인이 작성한 결제 내역만 상태를 변경할 수 있습니다."),
@@ -126,6 +126,11 @@ public enum ErrorCode {
     PAYMENT_ALREADY_EXISTS(HttpStatus.BAD_REQUEST,"P006", "이미 결제가 완료된 주문입니다."),
     INVALID_PAYMENT_METHOD(HttpStatus.BAD_REQUEST,"P007", "지원하지 않는 결제 수단입니다."),
     CANNOT_PAY_OWN_STORE(HttpStatus.FORBIDDEN, "P008","본인이 운영하는 가게의 주문은 스스로 결제할 수 없습니다."),
+    PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "P010", "결제 요청 금액이 실제 주문 금액과 일치하지 않습니다."),
+    CANNOT_CANCEL_PAYMENT(HttpStatus.BAD_REQUEST, "P007", "취소할 수 없는 결제 상태입니다."),
+
+    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "P011", "결제 내역을 찾을 수 없습니다."),
+    INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "P012", "잘못된 입력값입니다."),
 
     // 가게 식별자 에러 (기존 STORE_NOT_FOUND가 있지만 요청하신 메시지로 새로 생성)
     PAYMENT_STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "P015", "해당 storeId가 존재하지 않거나, 이미 삭제된 가게입니다."),
@@ -143,6 +148,9 @@ public enum ErrorCode {
     REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "R008", "존재하지 않거나 이미 삭제 처리가 완료된 리뷰입니다."),
 
     REVIEW_ALREADY_EXISTS(HttpStatus.CONFLICT, "R009", "이미 해당 주문에 대해 작성된 리뷰가 존재합니다."),
+
+    REVIEW_CONFLICT(HttpStatus.CONFLICT, "R011", "이미 해당 주문에 대한 리뷰가 존재합니다."), // 409
+    REVIEW_BAD_REQUEST(HttpStatus.BAD_REQUEST, "R012", "배달이 완료(COMPLETED)된 주문만 리뷰를 작성할 수 있습니다."), // 400
 
     // 13. AI Log (AI 시스템 로직)
     AI_LOG_FORBIDDEN(HttpStatus.FORBIDDEN, "AI001", "AI 로그 접근은 관리자(MANAGER, MASTER)만 가능합니다."),

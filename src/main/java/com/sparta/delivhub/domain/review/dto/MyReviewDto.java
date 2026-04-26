@@ -1,0 +1,30 @@
+package com.sparta.delivhub.domain.review.dto;
+
+import com.sparta.delivhub.domain.review.entity.Review;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Getter
+@Builder
+@AllArgsConstructor // For Test
+public class MyReviewDto {
+    private UUID reviewId;
+    private String storeName;
+    private Integer rating;
+    private String content;
+    private LocalDateTime createdAt;
+
+    // 엔티티를 DTO로 변환
+    public MyReviewDto(Review review) {
+        this.reviewId = review.getId();
+        // Store 엔티티에 가게 이름(name) 필드가 있다고 가정합니다. (없다면 맞춰서 수정해주세요)
+        this.storeName = review.getStore().getName();
+        this.rating = review.getRating();
+        this.content = review.getContent();
+        this.createdAt = review.getCreatedAt();
+    }
+}

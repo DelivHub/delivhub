@@ -5,17 +5,18 @@ import com.sparta.delivhub.domain.order.entity.Order;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.user.entity.User;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
+import lombok.*;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "p_review")
 @Getter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLRestriction("deleted_at IS NULL")
 public class Review extends BaseEntity {
@@ -56,4 +57,11 @@ public class Review extends BaseEntity {
         this.content = content;
         this.imageUrl = imageUrl;
     }
+
+    // 리뷰 수정 메서드 (더티 체킹용)
+    public void updateReview(Integer rating, String content) {
+        this.rating = rating;
+        this.content = content;
+    }
+
 }

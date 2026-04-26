@@ -67,4 +67,9 @@ public class Store extends BaseEntity {
         this.number = number;
         this.isHidden = isHidden;
     }
+
+    // 평균 별점 업데이트 메서드
+    public void updateAverageRating(BigDecimal newAverageRating) {
+        this.averageRating = newAverageRating;
+    }
 }

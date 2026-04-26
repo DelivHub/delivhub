@@ -4,9 +4,11 @@ import com.sparta.delivhub.common.entity.BaseEntity;
 import com.sparta.delivhub.domain.order.entity.Order;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLRestriction;
 import java.util.UUID;
 
+@Builder
 @Entity
 @Table(name = "p_payment")
 @Getter
@@ -18,6 +20,7 @@ public class Payment extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "payment_id", updatable = false, nullable = false)
     private UUID id;
 
     // 결제와 주문은 1:1 관계 (ERD 상 order_id가 UNIQUE)
@@ -30,18 +33,22 @@ public class Payment extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false, length = 20)
-    private PaymentMethod paymentMethod;
+    @ColumnDefault("'CARD'") // DB 테이블 생성 시 DDL에 DEFAULT 'CARD' 적용
+    @Builder.Default         // 자바(JPA) 레벨에서 객체 생성 시 기본값 할당
+    private PaymentMethod paymentMethod = PaymentMethod.CARD;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private PaymentStatus status;
+    @ColumnDefault("'PENDING'")
+    @Builder.Default
+    private PaymentStatus status = PaymentStatus.PENDING;
 
     @Builder
     public Payment(Order order, Long amount, PaymentMethod paymentMethod, PaymentStatus status) {
         this.order = order;
         this.amount = amount;
-        this.paymentMethod = (paymentMethod != null) ? paymentMethod : PaymentMethod.CARD;
-        this.status = (status != null) ? status : PaymentStatus.PENDING;
+        if (paymentMethod != null) this.paymentMethod = paymentMethod;
+        if (status != null) this.status = status;
     }
 
     // 결제 상태 변경
