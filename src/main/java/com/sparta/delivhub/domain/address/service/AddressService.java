@@ -47,7 +47,11 @@ public class AddressService {
         return AddressResponse.from(addressRepository.save(address));
     }
 
-    public PageResponse<AddressResponse> getAddresses(String username, String keyword, Pageable pageable) {
+    public PageResponse<AddressResponse> getAddresses(
+            String username,
+            String keyword,
+            Pageable pageable
+    ) {
         User user = userService.findUserByUsername(username);
 
         int size = pageable.getPageSize();
@@ -57,7 +61,12 @@ public class AddressService {
 
         Sort sort = Sort.by(Sort.Direction.DESC, "isDefault")
                 .and(Sort.by(Sort.Direction.DESC, "createdAt"));
-        Pageable validatedPageable = PageRequest.of(pageable.getPageNumber(), size, sort);
+
+        Pageable validatedPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                size,
+                sort
+        );
 
         Specification<Address> spec = (root, query, cb) ->
                 cb.and(
@@ -89,12 +98,19 @@ public class AddressService {
         Address address = findAddressById(addressId);
         validateOwner(address, username);
 
-        boolean unchanged = request.getAlias().equals(address.getAlias())
-                && request.getAddress().equals(address.getAddress())
-                && request.getDetail().equals(address.getDetail())
-                && request.getZipCode().equals(address.getZipCode());
+        boolean aliasUnchanged = request.getAlias() == null
+                || request.getAlias().equals(address.getAlias());
 
-        if (unchanged) {
+        boolean addressUnchanged = request.getAddress() == null
+                || request.getAddress().equals(address.getAddress());
+
+        boolean detailUnchanged = request.getDetail() == null
+                || request.getDetail().equals(address.getDetail());
+
+        boolean zipCodeUnchanged = request.getZipCode() == null
+                || request.getZipCode().equals(address.getZipCode());
+
+        if (aliasUnchanged && addressUnchanged && detailUnchanged && zipCodeUnchanged) {
             throw new BusinessException(ErrorCode.NO_CHANGES_DETECTED);
         }
 
