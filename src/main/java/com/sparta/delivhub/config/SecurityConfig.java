@@ -42,9 +42,15 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/auth/signup", "/api/v1/auth/login").permitAll()
+
+                        //User
                         .requestMatchers(HttpMethod.GET, "/api/v1/users").hasAnyRole("MANAGER", "MASTER")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/users/*").hasAnyRole("MANAGER", "MASTER")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/users/*/role").hasRole("MASTER")
+
+                        //Address
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/addresses/*").hasAnyRole("CUSTOMER", "MASTER")
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
