@@ -58,11 +58,11 @@ public class StoreService {
                 .isHidden(storeRequestDto.getIsHidden())
                 .build();
 
-        storeRepository.save(store);
+        Store save = storeRepository.save(store);
 
 
         return StoreIdResponseDto.builder()
-                .storeId(store.getId())
+                .storeId(save.getId())
                 .build();
     }
 
