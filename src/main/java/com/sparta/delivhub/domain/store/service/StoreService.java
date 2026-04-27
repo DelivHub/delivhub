@@ -55,6 +55,7 @@ public class StoreService {
                 .name(storeRequestDto.getName())
                 .category(category)
                 .area(area)
+                .owner(user)
                 .address(storeRequestDto.getAddress())
                 .number(storeRequestDto.getNumber())
                 .isHidden(storeRequestDto.getIsHidden())
