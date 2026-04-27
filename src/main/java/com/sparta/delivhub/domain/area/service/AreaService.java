@@ -50,10 +50,10 @@ public class AreaService {
                 .name(areaRequestDto.getName())
                 .build();
 
-                areaRepository.save(area);
+        Area save = areaRepository.save(area);
 
         return AreaIdResponseDto.builder()
-                .areaId(area.getId())
+                .areaId(save.getId())
                 .build();
     }
 
@@ -68,6 +68,7 @@ public class AreaService {
                 .map(AreaCityResponseDto::new)
                 .orElseThrow(() -> new BusinessException(ErrorCode.AREA_NOT_FOUND_ON_READ));
     }
+
     @Transactional
     public AreaIdResponseDto updateArea(UUID id, AreaRequestDto areaRequestDto, String userId) {
         User user = userRepository.findByUsernameAndDeletedAtIsNull(userId)

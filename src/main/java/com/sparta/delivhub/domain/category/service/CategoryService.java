@@ -36,10 +36,10 @@ public class CategoryService {
                 .name(categoryRequestDto.getName())
                 .build();
 
-        categoryRepository.save(category);
+        Category save = categoryRepository.save(category);
 
         return CategoryIdResponseDto.builder()
-                .categoryId(category.getId())
+                .categoryId(save.getId())
                 .build();
     }
 

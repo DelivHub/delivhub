@@ -11,6 +11,6 @@ public class AreaCityResponseDto {
     private String city;
 
     public AreaCityResponseDto(Area area) {
-        this.city = city;
+        this.city = area.getCity();
     }
 }
