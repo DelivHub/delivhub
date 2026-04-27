@@ -2,8 +2,8 @@ package com.sparta.delivhub.domain.payment.service;
 
 import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
-import com.sparta.delivhub.domain.order.entity.Order;
-import com.sparta.delivhub.domain.order.repository.OrderRepository;
+import com.sparta.delivhub.domain.order.service.entity.Order;
+import com.sparta.delivhub.domain.order.service.repository.OrderRepository;
 import com.sparta.delivhub.domain.payment.dto.MyPaymentListResponseDto;
 import com.sparta.delivhub.domain.payment.dto.RequestPaymentDTO;
 import com.sparta.delivhub.domain.payment.dto.ResponsePaymentDTO;
@@ -341,7 +341,7 @@ class PaymentServiceTest {
         Store store = Store.builder().owner(mockUser).build();
         ReflectionTestUtils.setField(store, "id", storeId);
 
-        com.sparta.delivhub.domain.order.entity.Order fakeOrder = com.sparta.delivhub.domain.order.entity.Order.builder().build();
+        Order fakeOrder = Order.builder().build();
         ReflectionTestUtils.setField(fakeOrder, "id", UUID.randomUUID());
 
         Payment payment = Payment.builder()

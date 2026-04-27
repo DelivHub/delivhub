@@ -1,14 +1,15 @@
-package com.sparta.delivhub.domain.order.service;
+package com.sparta.delivhub.domain.order.service.service;
 
-import com.sparta.delivhub.domain.order.dto.OrderRequestDto;
-import com.sparta.delivhub.domain.order.dto.OrderResponseDto;
-import com.sparta.delivhub.domain.order.entity.Order;
-import com.sparta.delivhub.domain.order.entity.OrderItem;
-import com.sparta.delivhub.domain.order.entity.OrderStatus;
-import com.sparta.delivhub.domain.order.exception.OrderCancellationNotAllowedException;
-import com.sparta.delivhub.domain.order.exception.OrderNotFoundException;
-import com.sparta.delivhub.domain.order.exception.UnauthorizedOrderAccessException;
-import com.sparta.delivhub.domain.order.repository.OrderRepository;
+import com.sparta.delivhub.common.dto.ErrorCode;
+import com.sparta.delivhub.domain.order.service.dto.OrderRequestDto;
+import com.sparta.delivhub.domain.order.service.dto.OrderResponseDto;
+import com.sparta.delivhub.domain.order.service.entity.Order;
+import com.sparta.delivhub.domain.order.service.entity.OrderItem;
+import com.sparta.delivhub.domain.order.service.entity.OrderStatus;
+import com.sparta.delivhub.domain.order.service.exception.OrderCancellationNotAllowedException;
+import com.sparta.delivhub.domain.order.service.exception.OrderNotFoundException;
+import com.sparta.delivhub.domain.order.service.exception.UnauthorizedOrderAccessException;
+import com.sparta.delivhub.domain.order.service.repository.OrderRepository;
 import com.sparta.delivhub.domain.payment.entity.PaymentStatus;
 import com.sparta.delivhub.domain.payment.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
@@ -68,22 +69,22 @@ public class OrderService {
         Pageable pageable = PageRequest.of(page, validatedSize, Sort.by("createdAt").descending());
 
         if (role.equals("MASTER") || role.equals("MANAGER")) {
-            return orderRepository.findAllByDeletedAtIsNull(pageable).map(OrderResponseDto::from);
+            return orderRepository.findAll(pageable).map(OrderResponseDto::from);
         }
 
         if (role.equals("OWNER")) {
             List<UUID> ownerStoreIds = getOwnerStoreIds(userId);
-            return orderRepository.findAllByStoreIdInAndDeletedAtIsNull(ownerStoreIds, pageable).map(OrderResponseDto::from);
+            return orderRepository.findAllByStoreIdIn(ownerStoreIds, pageable).map(OrderResponseDto::from);
         }
 
-        return orderRepository.findAllByUserIdAndDeletedAtIsNull(userId, pageable).map(OrderResponseDto::from);
+        return orderRepository.findAllByUserId(userId, pageable).map(OrderResponseDto::from);
     }
 
     public OrderResponseDto getOrder(UUID orderId, String userId, String role) {
         Order order = findOrderOrThrow(orderId);
 
         if (!role.equals("MASTER") && !role.equals("MANAGER") && !order.getUserId().equals(userId)) {
-            throw new UnauthorizedOrderAccessException("조회 권한이 없습니다.");
+            throw new UnauthorizedOrderAccessException(ErrorCode.ORDER_READ_FORBIDDEN);
         }
 
         return OrderResponseDto.from(order);
@@ -93,7 +94,7 @@ public class OrderService {
     public OrderResponseDto updateRequest(UUID orderId, String newRequest, String userId) {
         Order order = findOrderOrThrow(orderId);
         if (!order.getUserId().equals(userId)) {
-            throw new UnauthorizedOrderAccessException("본인 주문만 수정 가능합니다.");
+            throw new UnauthorizedOrderAccessException(ErrorCode.ORDER_UPDATE_FORBIDDEN);
         }
         order.updateRequest(newRequest);
         return OrderResponseDto.from(order);
@@ -106,10 +107,10 @@ public class OrderService {
         if (role.equals("OWNER")) {
             List<UUID> ownerStoreIds = getOwnerStoreIds(userId);
             if (!ownerStoreIds.contains(order.getStoreId())) {
-                throw new UnauthorizedOrderAccessException("본인 가게의 주문만 상태를 변경할 수 있습니다.");
+                throw new UnauthorizedOrderAccessException(ErrorCode.ORDER_STATUS_UPDATE_FORBIDDEN);
             }
         } else if (!role.equals("MASTER") && !role.equals("MANAGER")) {
-            throw new UnauthorizedOrderAccessException("주문 상태를 변경할 권한이 없습니다.");
+            throw new UnauthorizedOrderAccessException(ErrorCode.ORDER_STATUS_UPDATE_FORBIDDEN);
         }
 
         order.updateStatus(nextStatus);
@@ -142,13 +143,13 @@ public class OrderService {
     @Transactional
     public void deleteOrder(UUID orderId, String adminId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(orderId));
+                .orElseThrow(OrderNotFoundException::new);
         order.softDelete(adminId);
     }
 
     private Order findOrderOrThrow(UUID orderId) {
-        return orderRepository.findByIdAndDeletedAtIsNull(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        return orderRepository.findById(orderId)
+                .orElseThrow(OrderNotFoundException::new);
     }
 
     private int validatePageSize(int size) {

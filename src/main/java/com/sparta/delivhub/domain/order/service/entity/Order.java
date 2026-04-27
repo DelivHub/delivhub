@@ -1,4 +1,4 @@
-package com.sparta.delivhub.domain.order.entity;
+package com.sparta.delivhub.domain.order.service.entity;
 
 import com.sparta.delivhub.common.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -6,6 +6,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @Table(name = "p_order")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SQLRestriction("deleted_at IS NULL")
 public class Order extends BaseEntity {
     @Id
     @UuidGenerator

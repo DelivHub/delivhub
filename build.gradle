@@ -58,3 +58,13 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// 빌드 시 명확한 파일명 지정을 위한 설정
+bootJar {
+	archiveFileName = 'app.jar'
+}
+
+// plain jar 생성 방지
+jar {
+	enabled = false
+}

@@ -1,4 +1,4 @@
-package com.sparta.delivhub.domain.order.entity;
+package com.sparta.delivhub.domain.order.service.entity;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

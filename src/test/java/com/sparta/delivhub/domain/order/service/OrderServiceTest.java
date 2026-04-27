@@ -1,14 +1,15 @@
 package com.sparta.delivhub.domain.order.service;
 
-import com.sparta.delivhub.domain.order.dto.OrderRequestDto;
-import com.sparta.delivhub.domain.order.dto.OrderResponseDto;
-import com.sparta.delivhub.domain.order.entity.Order;
-import com.sparta.delivhub.domain.order.entity.OrderStatus;
-import com.sparta.delivhub.domain.order.entity.OrderType;
-import com.sparta.delivhub.domain.order.exception.OrderCancellationNotAllowedException;
-import com.sparta.delivhub.domain.order.exception.OrderNotFoundException;
-import com.sparta.delivhub.domain.order.exception.UnauthorizedOrderAccessException;
-import com.sparta.delivhub.domain.order.repository.OrderRepository;
+import com.sparta.delivhub.domain.order.service.dto.OrderRequestDto;
+import com.sparta.delivhub.domain.order.service.dto.OrderResponseDto;
+import com.sparta.delivhub.domain.order.service.entity.Order;
+import com.sparta.delivhub.domain.order.service.entity.OrderStatus;
+import com.sparta.delivhub.domain.order.service.entity.OrderType;
+import com.sparta.delivhub.domain.order.service.exception.OrderCancellationNotAllowedException;
+import com.sparta.delivhub.domain.order.service.exception.UnauthorizedOrderAccessException;
+import com.sparta.delivhub.domain.order.service.repository.OrderRepository;
+import com.sparta.delivhub.domain.order.service.service.OrderService;
+import com.sparta.delivhub.domain.payment.repository.PaymentRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -39,6 +39,9 @@ class OrderServiceTest {
 
     @Mock
     private OrderRepository orderRepository;
+
+    @Mock
+    private PaymentRepository paymentRepository;
 
     @Test
     @DisplayName("주문 생성 테스트 - 성공")
@@ -84,18 +87,17 @@ class OrderServiceTest {
     @DisplayName("주문 목록 조회 테스트 - MASTER 권한은 모든 주문 조회")
     void getOrders_Master_Success() {
         // given
-        Pageable pageable = PageRequest.of(0, 10);
         Order order = Order.builder().userId("user01").build();
         Page<Order> orderPage = new PageImpl<>(List.of(order));
 
-        given(orderRepository.findAllByDeletedAtIsNull(any(Pageable.class))).willReturn(orderPage);
+        given(orderRepository.findAll(any(Pageable.class))).willReturn(orderPage);
 
         // when
         Page<OrderResponseDto> result = orderService.getOrders("master", "MASTER", null, null, 0, 10);
 
         // then
         assertEquals(1, result.getTotalElements());
-        verify(orderRepository).findAllByDeletedAtIsNull(any(Pageable.class));
+        verify(orderRepository).findAll(any(Pageable.class));
     }
 
     @Test
@@ -103,18 +105,17 @@ class OrderServiceTest {
     void getOrders_Customer_Success() {
         // given
         String userId = "user01";
-        Pageable pageable = PageRequest.of(0, 10);
         Order order = Order.builder().userId(userId).build();
         Page<Order> orderPage = new PageImpl<>(List.of(order));
 
-        given(orderRepository.findAllByUserIdAndDeletedAtIsNull(eq(userId), any(Pageable.class))).willReturn(orderPage);
+        given(orderRepository.findAllByUserId(eq(userId), any(Pageable.class))).willReturn(orderPage);
 
         // when
         Page<OrderResponseDto> result = orderService.getOrders(userId, "CUSTOMER", null, null, 0, 10);
 
         // then
         assertEquals(1, result.getTotalElements());
-        verify(orderRepository).findAllByUserIdAndDeletedAtIsNull(eq(userId), any(Pageable.class));
+        verify(orderRepository).findAllByUserId(eq(userId), any(Pageable.class));
     }
 
     @Test
@@ -126,7 +127,7 @@ class OrderServiceTest {
         Order order = Order.builder().userId(userId).build();
         ReflectionTestUtils.setField(order, "id", orderId);
 
-        given(orderRepository.findByIdAndDeletedAtIsNull(orderId)).willReturn(Optional.of(order));
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 
         // when
         OrderResponseDto response = orderService.getOrder(orderId, userId, "CUSTOMER");
@@ -142,7 +143,7 @@ class OrderServiceTest {
         // given
         UUID orderId = UUID.randomUUID();
         Order order = Order.builder().userId("owner_user").build();
-        given(orderRepository.findByIdAndDeletedAtIsNull(orderId)).willReturn(Optional.of(order));
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 
         // when & then
         assertThrows(UnauthorizedOrderAccessException.class, () ->
@@ -159,7 +160,7 @@ class OrderServiceTest {
         Order order = spy(Order.builder().userId(userId).build());
         ReflectionTestUtils.setField(order, "createdAt", LocalDateTime.now().minusMinutes(3));
 
-        given(orderRepository.findByIdAndDeletedAtIsNull(orderId)).willReturn(Optional.of(order));
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 
         // when
         orderService.cancelOrder(orderId, userId, "CUSTOMER");
@@ -177,7 +178,7 @@ class OrderServiceTest {
         Order order = Order.builder().userId(userId).build();
         ReflectionTestUtils.setField(order, "createdAt", LocalDateTime.now().minusMinutes(6));
 
-        given(orderRepository.findByIdAndDeletedAtIsNull(orderId)).willReturn(Optional.of(order));
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 
         // when & then
         assertThrows(OrderCancellationNotAllowedException.class, () ->
@@ -189,12 +190,12 @@ class OrderServiceTest {
     @DisplayName("페이지네이션 테스트 - 허용되지 않는 사이즈 입력 시 10으로 고정")
     void validatePageSize_Fallback() {
         // given
-        given(orderRepository.findAllByDeletedAtIsNull(any(Pageable.class))).willReturn(Page.empty());
+        given(orderRepository.findAll(any(Pageable.class))).willReturn(Page.empty());
 
         // when
         orderService.getOrders("master", "MASTER", null, null, 0, 25); // 25는 허용되지 않음
 
         // then
-        verify(orderRepository).findAllByDeletedAtIsNull(argThat(pageable -> pageable.getPageSize() == 10));
+        verify(orderRepository).findAll(argThat((Pageable p) -> p.getPageSize() == 10));
     }
 }

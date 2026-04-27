@@ -1,32 +1,5 @@
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/${DB_NAME}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-    driver-class-name: org.postgresql.Driver
-
-  jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-        jdbc:
-          time_zone: Asia/Seoul
-
 logging:
   level:
     root: info
     org.hibernate.SQL: debug
     org.springframework.security: DEBUG
-
-jwt:
-  secret: ${JWT_SECRET}
-  access-token-validity-ms: 3600000
-  refresh-token-validity-ms: 604800000
-
-gemini:
-  api:
-    key: ${GEMINI_API_KEY}

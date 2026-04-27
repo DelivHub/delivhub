@@ -1,7 +1,7 @@
 package com.sparta.delivhub.domain.review.entity;
 
 import com.sparta.delivhub.common.entity.BaseEntity;
-import com.sparta.delivhub.domain.order.entity.Order;
+import com.sparta.delivhub.domain.order.service.entity.Order;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.user.entity.User;
 import jakarta.persistence.*;
@@ -9,7 +9,6 @@ import lombok.*;
 
 import org.hibernate.annotations.SQLRestriction;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
