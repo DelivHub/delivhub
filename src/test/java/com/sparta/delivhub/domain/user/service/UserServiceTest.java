@@ -298,7 +298,6 @@ class UserServiceTest {
 
         given(userRepository.findByUsernameAndDeletedAtIsNull("user01")).willReturn(Optional.of(user));
         given(passwordEncoder.matches("OldPassword1!", "encodedOldPassword")).willReturn(true);
-        given(passwordEncoder.matches("OldPassword1!", "encodedOldPassword")).willReturn(true);
 
         // when & then
         assertThatThrownBy(() -> userService.updatePassword("user01", request))
