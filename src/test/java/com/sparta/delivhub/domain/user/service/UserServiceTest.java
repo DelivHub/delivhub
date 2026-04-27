@@ -1,5 +1,7 @@
 package com.sparta.delivhub.domain.user.service;
 
+import com.sparta.delivhub.common.dto.BusinessException;
+import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.common.dto.PageResponse;
 import com.sparta.delivhub.domain.user.dto.UpdatePasswordRequest;
 import com.sparta.delivhub.domain.user.dto.UpdateRoleRequest;
@@ -126,6 +128,19 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("유저_단건_조회_실패_존재X")
+    void getUser_fail_notFound() {
+        // given
+        given(userRepository.findByUsernameAndDeletedAtIsNull("user01")).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> userService.getUser("user01"))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.USER_NOT_FOUND);
+    }
+
+    @Test
     @DisplayName("유저_닉네임_수정_성공")
     void updateUser_success_nickname() {
         // given
@@ -184,6 +199,42 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("유저_정보_수정_실패_변경사항_없음")
+    void updateUser_fail_noChanges() {
+        // given
+        UpdateUserRequest request = mock(UpdateUserRequest.class);
+        given(request.getNickname()).willReturn("홍길동");
+        given(request.getEmail()).willReturn("user01@example.com");
+        given(request.getIsPublic()).willReturn(true);
+
+        given(userRepository.findByUsernameAndDeletedAtIsNull("user01")).willReturn(Optional.of(user));
+
+        // when & then
+        assertThatThrownBy(() -> userService.updateUser("user01", request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.NO_CHANGES_DETECTED);
+    }
+
+    @Test
+    @DisplayName("유저_정보_수정_실패_중복_이메일")
+    void updateUser_fail_duplicateEmail() {
+        // given
+        UpdateUserRequest request = mock(UpdateUserRequest.class);
+        given(request.getNickname()).willReturn(null);
+        given(request.getEmail()).willReturn("duplicate@example.com");
+
+        given(userRepository.findByUsernameAndDeletedAtIsNull("user01")).willReturn(Optional.of(user));
+        given(userRepository.existsByEmail("duplicate@example.com")).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> userService.updateUser("user01", request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.DUPLICATE_EMAIL);
+    }
+
+    @Test
     @DisplayName("유저_역할_수정_성공")
     void updateRole_success() {
         // given
@@ -221,6 +272,41 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("비밀번호_변경_실패_현재_비밀번호_불일치")
+    void updatePassword_fail_wrongCurrentPassword() {
+        // given
+        UpdatePasswordRequest request = mock(UpdatePasswordRequest.class);
+        given(request.getCurrentPassword()).willReturn("WrongPassword1!");
+
+        given(userRepository.findByUsernameAndDeletedAtIsNull("user01")).willReturn(Optional.of(user));
+        given(passwordEncoder.matches("WrongPassword1!", "encodedOldPassword")).willReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> userService.updatePassword("user01", request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.WRONG_CURRENT_PASSWORD);
+    }
+
+    @Test
+    @DisplayName("비밀번호_변경_실패_현재_비밀번호와_동일")
+    void updatePassword_fail_sameAsCurrentPassword() {
+        // given
+        UpdatePasswordRequest request = mock(UpdatePasswordRequest.class);
+        given(request.getCurrentPassword()).willReturn("OldPassword1!");
+        given(request.getNewPassword()).willReturn("OldPassword1!");
+
+        given(userRepository.findByUsernameAndDeletedAtIsNull("user01")).willReturn(Optional.of(user));
+        given(passwordEncoder.matches("OldPassword1!", "encodedOldPassword")).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> userService.updatePassword("user01", request))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.PASSWORD_SAME_AS_CURRENT);
+    }
+
+    @Test
     @DisplayName("유저_삭제_성공")
     void deleteUser_success() {
         // given
@@ -232,5 +318,18 @@ class UserServiceTest {
         // then
         verify(userRepository).findByUsernameAndDeletedAtIsNull("user01");
         assertThat(user.getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("유저_삭제_실패_존재X")
+    void deleteUser_fail_notFound() {
+        // given
+        given(userRepository.findByUsernameAndDeletedAtIsNull("user01")).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> userService.deleteUser("user01", "admin"))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.USER_NOT_FOUND);
     }
 }
