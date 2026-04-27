@@ -31,6 +31,7 @@ public class StoreRequestDto {
 
     @NotNull(message = "공개 여부는 필수입니다.")
     private Boolean isHidden = false;
+
     public StoreRequestDto(String name, UUID categoryId, UUID areaId, String address, String number) {
         this.name = name;
         this.categoryId = categoryId;

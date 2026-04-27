@@ -1,6 +1,7 @@
 package com.sparta.delivhub.security;
 
 import com.sparta.delivhub.domain.user.entity.User;
+import com.sparta.delivhub.domain.user.entity.UserRole;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
@@ -28,6 +29,10 @@ public class UserDetailsImpl implements UserDetails {
 
     public String getRole() {
         return user.getUserRole().name();
+    }
+
+    public UserRole getUserRole() {
+        return user.getUserRole();
     }
 
     @Override
