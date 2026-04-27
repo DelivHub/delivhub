@@ -41,7 +41,7 @@ public class StoreService {
         User user = userRepository.findByUsernameAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        if (user.getUserRole() != UserRole.OWNER) {
+        if (user.getUserRole() != UserRole.OWNER && user.getUserRole() != UserRole.MASTER) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
