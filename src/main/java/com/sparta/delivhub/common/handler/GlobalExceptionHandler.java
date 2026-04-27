@@ -49,11 +49,11 @@ public class GlobalExceptionHandler {
     // 3. 그 외 알 수 없는 모든 에러 방어
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
+        log.error("Server Error: ", e);
         ErrorResponse response = ErrorResponse.builder()
                 .status(500)
                 .message("SERVER_ERROR")
                 .build();
-        // 실무에서는 여기에 log.error("Server Error: ", e); 를 추가합니다.
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 

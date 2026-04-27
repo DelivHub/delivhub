@@ -1,14 +1,10 @@
 package com.sparta.delivhub.domain.order.exception;
 
-import java.util.UUID;
+import com.sparta.delivhub.common.dto.BusinessException;
+import com.sparta.delivhub.common.dto.ErrorCode;
 
-public class OrderNotFoundException extends RuntimeException {
-
-    public OrderNotFoundException(UUID orderId) {
-        super("존재하지 않는 주문입니다. ID: " + orderId);
-    }
-
-    public OrderNotFoundException(String message) {
-        super(message);
+public class OrderNotFoundException extends BusinessException {
+    public OrderNotFoundException() {
+        super(ErrorCode.ORDER_NOT_FOUND_ON_READ);
     }
 }

@@ -1,12 +1,10 @@
 package com.sparta.delivhub.domain.order.exception;
 
-public class OrderCancellationNotAllowedException extends RuntimeException {
+import com.sparta.delivhub.common.dto.BusinessException;
+import com.sparta.delivhub.common.dto.ErrorCode;
 
+public class OrderCancellationNotAllowedException extends BusinessException {
     public OrderCancellationNotAllowedException() {
-        super("주문 생성 후 5분이 경과하여 취소할 수 없습니다.");
-    }
-
-    public OrderCancellationNotAllowedException(String message) {
-        super(message);
+        super(ErrorCode.ORDER_CANCEL_TIMEOUT);
     }
 }
