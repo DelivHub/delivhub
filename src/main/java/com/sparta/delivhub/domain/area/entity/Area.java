@@ -16,7 +16,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @SQLDelete(sql = "UPDATE p_area SET deleted_at = NOW() WHERE id = ?")
-@SQLRestriction("deleted_at IS NULL AND is_hidden = false")
+@SQLRestriction("deleted_at IS NULL AND is_active = false")
 public class Area extends BaseEntity {
 
     @Id
