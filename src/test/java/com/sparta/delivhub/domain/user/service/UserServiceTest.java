@@ -130,7 +130,7 @@ class UserServiceTest {
                 .nickname("홍길동")
                 .build();
 
-        given(userRepository.findByUsername("user01")).willReturn(Optional.of(user));
+        given(userRepository.findByUsernameAndDeletedAtIsNull("user01")).willReturn(Optional.of(user));
 
         // when
         UserResponse response = userService.getUser("user01");
@@ -160,7 +160,7 @@ class UserServiceTest {
         given(request.getEmail()).willReturn(null);
         given(request.getIsPublic()).willReturn(null);
 
-        given(userRepository.findByUsername("user01")).willReturn(Optional.of(user));
+        given(userRepository.findByUsernameAndDeletedAtIsNull("user01")).willReturn(Optional.of(user));
 
         // when
         UserResponse response = userService.updateUser("user01", request);
@@ -187,7 +187,7 @@ class UserServiceTest {
         given(request.getEmail()).willReturn("newemail@example.com");
         given(request.getIsPublic()).willReturn(null);
 
-        given(userRepository.findByUsername("user01")).willReturn(Optional.of(user));
+        given(userRepository.findByUsernameAndDeletedAtIsNull("user01")).willReturn(Optional.of(user));
         given(userRepository.existsByEmail("newemail@example.com")).willReturn(false);
 
         // when
@@ -215,7 +215,7 @@ class UserServiceTest {
         given(request.getEmail()).willReturn(null);
         given(request.getIsPublic()).willReturn(false);
 
-        given(userRepository.findByUsername("user01")).willReturn(Optional.of(user));
+        given(userRepository.findByUsernameAndDeletedAtIsNull("user01")).willReturn(Optional.of(user));
 
         // when
         UserResponse response = userService.updateUser("user01", request);
@@ -240,7 +240,7 @@ class UserServiceTest {
         UpdateRoleRequest request = mock(UpdateRoleRequest.class);
         given(request.getRole()).willReturn(UserRole.OWNER);
 
-        given(userRepository.findByUsername("user01")).willReturn(Optional.of(user));
+        given(userRepository.findByUsernameAndDeletedAtIsNull("user01")).willReturn(Optional.of(user));
 
         // when
         UserResponse response = userService.updateRole("user01", request);
@@ -266,7 +266,7 @@ class UserServiceTest {
         given(request.getCurrentPassword()).willReturn("OldPassword1!");
         given(request.getNewPassword()).willReturn("NewPassword1!");
 
-        given(userRepository.findByUsername("user01")).willReturn(Optional.of(user));
+        given(userRepository.findByUsernameAndDeletedAtIsNull("user01")).willReturn(Optional.of(user));
         given(passwordEncoder.matches("OldPassword1!", "encodedOldPassword")).willReturn(true);
         given(passwordEncoder.matches("NewPassword1!", "encodedOldPassword")).willReturn(false);
         given(passwordEncoder.encode("NewPassword1!")).willReturn("encodedNewPassword");
@@ -290,13 +290,13 @@ class UserServiceTest {
                 .nickname("홍길동")
                 .build();
 
-        given(userRepository.findByUsername("user01")).willReturn(Optional.of(user));
+        given(userRepository.findByUsernameAndDeletedAtIsNull("user01")).willReturn(Optional.of(user));
 
         // when
         userService.deleteUser("user01", "admin");
 
         // then
-        verify(userRepository).findByUsername("user01");
+        verify(userRepository).findByUsernameAndDeletedAtIsNull("user01");
         assertThat(user.getDeletedAt()).isNotNull();
     }
 }

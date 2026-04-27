@@ -9,6 +9,7 @@ import com.sparta.delivhub.domain.order.exception.OrderCancellationNotAllowedExc
 import com.sparta.delivhub.domain.order.exception.OrderNotFoundException;
 import com.sparta.delivhub.domain.order.exception.UnauthorizedOrderAccessException;
 import com.sparta.delivhub.domain.order.repository.OrderRepository;
+import com.sparta.delivhub.domain.payment.repository.PaymentRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +40,9 @@ class OrderServiceTest {
 
     @Mock
     private OrderRepository orderRepository;
+
+    @Mock
+    private PaymentRepository paymentRepository;
 
     @Test
     @DisplayName("주문 생성 테스트 - 성공")

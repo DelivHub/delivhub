@@ -1,5 +1,6 @@
 package com.sparta.delivhub.domain.menu.service;
 
+import com.sparta.delivhub.domain.ai.service.AiService;
 import com.sparta.delivhub.domain.menu.dto.CreateMenuDto;
 import com.sparta.delivhub.domain.menu.dto.HiddenMenuDto;
 import com.sparta.delivhub.domain.menu.dto.ResponseMenuDto;
@@ -10,6 +11,9 @@ import com.sparta.delivhub.domain.menu.repository.MenuRepository;
 import com.sparta.delivhub.domain.option.repository.OptionRepository;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.store.repository.StoreRepository;
+import com.sparta.delivhub.domain.user.entity.User;
+import com.sparta.delivhub.domain.user.entity.UserRole;
+import com.sparta.delivhub.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,6 +47,10 @@ class MenuServiceTest {
     private OptionRepository optionRepository;
     @Mock
     private StoreRepository storeRepository;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private AiService aiService;
 
     private UUID storeId;
     private UUID menuId;
@@ -54,8 +62,12 @@ class MenuServiceTest {
         storeId = UUID.randomUUID();
         menuId = UUID.randomUUID();
 
+        User mockOwner = mock(User.class);
+        lenient().when(mockOwner.getUsername()).thenReturn("owner1");
+
         store = mock(Store.class);
         lenient().when(store.getId()).thenReturn(storeId);
+        lenient().when(store.getOwner()).thenReturn(mockOwner);
 
         menu = mock(Menu.class);
         lenient().when(menu.getId()).thenReturn(menuId);
@@ -66,6 +78,10 @@ class MenuServiceTest {
         lenient().when(menu.isHidden()).thenReturn(false);
         lenient().when(menu.getCreatedAt()).thenReturn(LocalDateTime.now());
         lenient().when(menu.getCreatedBy()).thenReturn("owner1");
+
+        User mockUser = mock(User.class);
+        lenient().when(mockUser.getUserRole()).thenReturn(UserRole.MASTER);
+        lenient().when(userRepository.findByUsernameAndDeletedAtIsNull(any())).thenReturn(Optional.of(mockUser));
     }
 
     @Test

@@ -7,6 +7,10 @@ import com.sparta.delivhub.domain.option.dto.ResponseOptionDto;
 import com.sparta.delivhub.domain.option.dto.UpdateOptionDto;
 import com.sparta.delivhub.domain.option.entity.Option;
 import com.sparta.delivhub.domain.option.repository.OptionRepository;
+import com.sparta.delivhub.domain.store.entity.Store;
+import com.sparta.delivhub.domain.user.entity.User;
+import com.sparta.delivhub.domain.user.entity.UserRole;
+import com.sparta.delivhub.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,6 +38,9 @@ class OptionServiceTest {
     @Mock
     private MenuRepository menuRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     private UUID menuId;
     private UUID optionId;
     private Menu menu;
@@ -44,14 +51,25 @@ class OptionServiceTest {
         menuId = UUID.randomUUID();
         optionId = UUID.randomUUID();
 
+        User mockOwner = mock(User.class);
+        lenient().when(mockOwner.getUsername()).thenReturn("owner1");
+
+        Store mockStore = mock(Store.class);
+        lenient().when(mockStore.getOwner()).thenReturn(mockOwner);
+
         menu = mock(Menu.class);
         lenient().when(menu.getId()).thenReturn(menuId);
+        lenient().when(menu.getStore()).thenReturn(mockStore);
 
         option = mock(Option.class);
         lenient().when(option.getId()).thenReturn(optionId);
         lenient().when(option.getName()).thenReturn("소스 추가");
         lenient().when(option.getExtraPrice()).thenReturn(500L);
         lenient().when(option.getMenu()).thenReturn(menu);
+
+        User mockUser = mock(User.class);
+        lenient().when(mockUser.getUserRole()).thenReturn(UserRole.MASTER);
+        lenient().when(userRepository.findByUsernameAndDeletedAtIsNull(any())).thenReturn(Optional.of(mockUser));
     }
 
     @Test
