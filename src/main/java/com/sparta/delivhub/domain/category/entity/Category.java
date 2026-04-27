@@ -16,7 +16,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @SQLDelete(sql = "UPDATE p_category SET deleted_at = NOW() WHERE id = ?")
-@SQLRestriction("deleted_at IS NULL")
+@SQLRestriction("deleted_at IS NULL AND is_active = false")
 public class Category extends BaseEntity {
 
     @Id
@@ -28,7 +28,12 @@ public class Category extends BaseEntity {
     @Column(name = "name", unique = true, length = 100, nullable = false)
     private String name;
 
-    public void updateCategory(String name) {
+    @Builder.Default
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
+    public void updateCategory(String name, Boolean isActive) {
         this.name = name;
+        this.isActive = isActive;
     }
 }

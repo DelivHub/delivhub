@@ -66,7 +66,8 @@ public class CategoryService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
         category.updateCategory(
-                categoryRequestDto.getName()
+                categoryRequestDto.getName(),
+                categoryRequestDto.getIsActive()
         );
 
         return CategoryIdResponseDto.builder()
