@@ -10,6 +10,7 @@ import com.sparta.delivhub.domain.user.dto.UserResponse;
 import com.sparta.delivhub.domain.user.entity.User;
 import com.sparta.delivhub.domain.user.entity.UserRole;
 import com.sparta.delivhub.domain.user.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,19 @@ class UserServiceTest {
 
     @InjectMocks
     private UserService userService;
+
+    private User user;
+
+    @BeforeEach
+    void setUp() {
+        user = User.builder()
+                .username("user01")
+                .email("user01@example.com")
+                .password("encodedOldPassword")
+                .userRole(UserRole.CUSTOMER)
+                .nickname("홍길동")
+                .build();
+    }
 
     @Test
     @DisplayName("유저_목록_조회_성공")
