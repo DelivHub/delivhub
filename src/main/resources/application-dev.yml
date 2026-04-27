@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/delivhub
-    username: postgres
-    password: 54dlwogns
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -13,6 +13,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        default_batch_fetch_size: 100
         jdbc:
           time_zone: Asia/Seoul
 
@@ -23,7 +24,7 @@ logging:
     org.springframework.security: DEBUG
 
 jwt:
-  secret: c3BhcnRhLW5ldy1kZWxpdmh1Yi1zZWNyZXQta2V5LTMyLWNoYXJhY3RlcnM=
+  secret: ${JWT_SECRET}
   access-token-validity-ms: 3600000
   refresh-token-validity-ms: 604800000
 

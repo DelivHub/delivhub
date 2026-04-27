@@ -13,16 +13,12 @@ import java.util.UUID;
 
 public interface OrderRepository extends JpaRepository<Order, UUID> {
 
-    @EntityGraph(attributePaths = {"orderItems"})
     Optional<Order> findById(UUID id);
 
-    @EntityGraph(attributePaths = {"orderItems"})
     Page<Order> findAllByUserId(String userId, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"orderItems"})
     @Query("SELECT o FROM Order o WHERE o.storeId IN :storeIds")
     Page<Order> findAllByStoreIdIn(@Param("storeIds") Iterable<UUID> storeIds, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"orderItems"})
     Page<Order> findAll(Pageable pageable);
 }
