@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/delivhub
+    username: postgres
+    password: ${DB_PASSWORD:54dltjgus}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: create-drop # 테스트마다 테이블 생성/삭제
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        default_batch_fetch_size: 100
+
+jwt:
+  secret: ${JWT_SECRET:c3BhcnRhLW5ldy1kZWxpdmh1Yi1zZWNyZXQta2V5LTMyLWNoYXJhY3RlcnM=}
+  access-token-validity-ms: 3600000
+  refresh-token-validity-ms: 604800000
+
+gemini:
+  api:
+    key: ${GEMINI_API_KEY:test-key}
