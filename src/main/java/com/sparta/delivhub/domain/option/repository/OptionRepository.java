@@ -31,4 +31,18 @@ public interface OptionRepository extends JpaRepository<Option, UUID> {
           and (oi.deletedAt is null or oi.id is null)
     """)
     List<Option> findAllByMenuIdWithItems(@Param("menuId") UUID menuId);
+
+    @Query("""
+        select distinct o
+        from Option o
+        left join fetch o.optionItems oi
+        where o.id = :optionId
+          and o.menu.id = :menuId
+          and o.deletedAt is null
+          and (oi.deletedAt is null or oi.id is null)
+    """)
+    Optional<Option> findByIdAndMenuIdWithItems(
+            @Param("optionId") UUID optionId,
+            @Param("menuId") UUID menuId
+    );
 }

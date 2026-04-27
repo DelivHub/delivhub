@@ -39,6 +39,7 @@ public class OptionService {
         Option option = Option.builder()
                 .menu(menu)
                 .name(request.getName())
+                .type(request.getType())
                 .build();
 
         // 옵션 아이템 생성
@@ -79,7 +80,7 @@ public class OptionService {
         option.update(request.getName(), request.getType());
 
         if (request.getItems() != null) {
-            updateOptionItems(option, request.getItems());
+            updateOptionItems(option, request.getItems(), username);
         }
 
         return ResponseOptionDto.from(option);
@@ -87,17 +88,18 @@ public class OptionService {
 
 
     // 옵션 아이템 수정/추가/삭제
-    private void updateOptionItems(Option option, List<UpdateOptionDto.Item> itemRequests) {
+    private void updateOptionItems(Option option, List<UpdateOptionDto.Item> itemRequests, String username) {
         List<UUID> requestItemIds = itemRequests.stream()
                 .map(UpdateOptionDto.Item::getOptionItemId)
                 .filter(Objects::nonNull)
                 .toList();
 
         // 요청에 없는 기존 아이템은 삭제
-        option.getOptionItems().removeIf(optionItem ->
-                optionItem.getDeletedAt() == null
-                        && !requestItemIds.contains(optionItem.getId())
-        );
+        option.getOptionItems().stream()
+                .filter(optionItem -> optionItem.getDeletedAt() == null)
+                .filter(optionItem -> !requestItemIds.contains(optionItem.getId()))
+                .forEach(optionItem -> optionItem.softDelete(username));
+
 
         for (UpdateOptionDto.Item itemRequest : itemRequests) {
             if (itemRequest.getOptionItemId() == null) {
@@ -113,10 +115,13 @@ public class OptionService {
     public void deleteOption(UUID menuId, UUID optionId, String username) {
         getMenuAndCheckPermission(menuId, username);
 
-        Option option = optionRepository.findByIdAndDeletedAtIsNull(optionId)
+        Option option = optionRepository.findByIdAndMenuIdWithItems(optionId, menuId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.OPTION_NOT_FOUND));
 
         option.softDelete(username);
+        option.getOptionItems().stream()
+                .filter(optionItem -> optionItem.getDeletedAt() == null)
+                .forEach(optionItem -> optionItem.softDelete(username));
     }
 
     // 새 옵션 아이템 추가
