@@ -1,7 +1,8 @@
-package com.sparta.delivhub.domain.order.dto;
+package com.sparta.delivhub.domain.order.service.dto;
 
-import com.sparta.delivhub.domain.order.entity.Order;
-import com.sparta.delivhub.domain.order.entity.OrderStatus;
+import com.sparta.delivhub.domain.order.service.entity.Order;
+import com.sparta.delivhub.domain.order.service.entity.OrderStatus;
+import com.sparta.delivhub.domain.order.service.entity.OrderItem;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -41,7 +42,7 @@ public class OrderResponseDto {
         private Integer quantity;
         private Long unitPrice;
 
-        public static OrderItemResponseDto from(com.sparta.delivhub.domain.order.entity.OrderItem item) {
+        public static OrderItemResponseDto from(OrderItem item) {
             return OrderItemResponseDto.builder()
                 .menuId(item.getMenuId())
                 .quantity(item.getQuantity())

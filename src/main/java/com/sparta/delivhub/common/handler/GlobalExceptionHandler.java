@@ -23,7 +23,7 @@ public class GlobalExceptionHandler {
         ErrorCode errorCode = e.getErrorCode();
         ErrorResponse response = ErrorResponse.builder()
                 .status(errorCode.getHttpStatus().value())
-                .message(errorCode.name()) // 예: "STORE_NOT_FOUND"
+                .message(e.getMessage())
                 .build();
         return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
     }

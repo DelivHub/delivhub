@@ -1,14 +1,14 @@
 package com.sparta.delivhub.domain.order.service;
 
-import com.sparta.delivhub.domain.order.dto.OrderRequestDto;
-import com.sparta.delivhub.domain.order.dto.OrderResponseDto;
-import com.sparta.delivhub.domain.order.entity.Order;
-import com.sparta.delivhub.domain.order.entity.OrderStatus;
-import com.sparta.delivhub.domain.order.entity.OrderType;
-import com.sparta.delivhub.domain.order.exception.OrderCancellationNotAllowedException;
-import com.sparta.delivhub.domain.order.exception.OrderNotFoundException;
-import com.sparta.delivhub.domain.order.exception.UnauthorizedOrderAccessException;
-import com.sparta.delivhub.domain.order.repository.OrderRepository;
+import com.sparta.delivhub.domain.order.service.dto.OrderRequestDto;
+import com.sparta.delivhub.domain.order.service.dto.OrderResponseDto;
+import com.sparta.delivhub.domain.order.service.entity.Order;
+import com.sparta.delivhub.domain.order.service.entity.OrderStatus;
+import com.sparta.delivhub.domain.order.service.entity.OrderType;
+import com.sparta.delivhub.domain.order.service.exception.OrderCancellationNotAllowedException;
+import com.sparta.delivhub.domain.order.service.exception.UnauthorizedOrderAccessException;
+import com.sparta.delivhub.domain.order.service.repository.OrderRepository;
+import com.sparta.delivhub.domain.order.service.service.OrderService;
 import com.sparta.delivhub.domain.payment.repository.PaymentRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
