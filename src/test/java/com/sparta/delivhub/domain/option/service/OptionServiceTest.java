@@ -6,6 +6,7 @@ import com.sparta.delivhub.domain.option.dto.CreateOptionDto;
 import com.sparta.delivhub.domain.option.dto.ResponseOptionDto;
 import com.sparta.delivhub.domain.option.dto.UpdateOptionDto;
 import com.sparta.delivhub.domain.option.entity.Option;
+import com.sparta.delivhub.domain.option.entity.OptionType;
 import com.sparta.delivhub.domain.option.repository.OptionRepository;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.user.entity.User;
@@ -19,6 +20,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -64,7 +66,7 @@ class OptionServiceTest {
         option = mock(Option.class);
         lenient().when(option.getId()).thenReturn(optionId);
         lenient().when(option.getName()).thenReturn("소스 추가");
-        lenient().when(option.getExtraPrice()).thenReturn(500L);
+        lenient().when(option.getType()).thenReturn(OptionType.SINGLE);
         lenient().when(option.getMenu()).thenReturn(menu);
 
         User mockUser = mock(User.class);
@@ -76,7 +78,9 @@ class OptionServiceTest {
     @DisplayName("옵션 등록 성공")
     void createOption() {
         // given
-        CreateOptionDto request = new CreateOptionDto("소스 추가", 500L);
+        List<CreateOptionDto.Item> items = List.of(new CreateOptionDto.Item("소스", 500L));
+        CreateOptionDto request = new CreateOptionDto("소스 추가", OptionType.SINGLE, items);
+
         when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
         when(optionRepository.save(any(Option.class))).thenReturn(option);
 
@@ -93,7 +97,7 @@ class OptionServiceTest {
     void getOptions() {
         // given
         when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
-        when(optionRepository.findByMenuIdAndDeletedAtIsNull(menuId)).thenReturn(List.of(option));
+        when(optionRepository.findAllByMenuIdWithItems(menuId)).thenReturn(List.of(option));
 
         // when
         List<ResponseOptionDto> response = optionService.getOptions(menuId);
@@ -106,16 +110,18 @@ class OptionServiceTest {
     @DisplayName("옵션 수정 성공")
     void updateOption() {
         // given
-        UpdateOptionDto request = new UpdateOptionDto("수정된 옵션명", 1000L);
+        List<UpdateOptionDto.Item> items = List.of(new UpdateOptionDto.Item(null, "수정된 아이템", 1000L));
+        UpdateOptionDto request = new UpdateOptionDto("수정된 옵션명", OptionType.MULTIPLE, items);
+
         when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
-        when(optionRepository.findByIdAndDeletedAtIsNull(optionId)).thenReturn(Optional.of(option));
+        when(optionRepository.findByIdAndMenuIdAndDeletedAtIsNull(optionId, menuId)).thenReturn(Optional.of(option));
 
         // when
         ResponseOptionDto response = optionService.updateOption(menuId, optionId, request, null);
 
         // then
         assertThat(response).isNotNull();
-        verify(option, times(1)).update(request.getName(), request.getExtraPrice());
+        verify(option, times(1)).update(request.getName(), request.getType());
     }
 
     @Test
@@ -123,7 +129,8 @@ class OptionServiceTest {
     void deleteOption() {
         // given
         when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
-        when(optionRepository.findByIdAndDeletedAtIsNull(optionId)).thenReturn(Optional.of(option));
+        when(optionRepository.findByIdAndMenuIdWithItems(optionId, menuId)).thenReturn(Optional.of(option));
+        when(option.getOptionItems()).thenReturn(new ArrayList<>());
 
         // when
         optionService.deleteOption(menuId, optionId, null);
