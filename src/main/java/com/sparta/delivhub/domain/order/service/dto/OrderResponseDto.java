@@ -1,6 +1,7 @@
 package com.sparta.delivhub.domain.order.service.dto;
 
 import com.sparta.delivhub.domain.order.service.entity.Order;
+import com.sparta.delivhub.domain.order.service.entity.OrderItemOption;
 import com.sparta.delivhub.domain.order.service.entity.OrderStatus;
 import com.sparta.delivhub.domain.order.service.entity.OrderItem;
 import lombok.Builder;
@@ -41,13 +42,36 @@ public class OrderResponseDto {
         private UUID menuId;
         private Integer quantity;
         private Long unitPrice;
+        private List<OrderItemOptionResponseDto> options;
 
         public static OrderItemResponseDto from(OrderItem item) {
             return OrderItemResponseDto.builder()
                 .menuId(item.getMenuId())
                 .quantity(item.getQuantity())
                 .unitPrice(item.getUnitPrice())
+                .options(item.getOptions().stream()
+                    .map(OrderItemOptionResponseDto::from)
+                    .toList())
                 .build();
+        }
+    }
+    @Getter
+    @Builder
+    public static class OrderItemOptionResponseDto {
+        private UUID optionId;
+        private String optionName;
+        private UUID optionItemId;
+        private String optionItemName;
+        private Long extraPrice;
+
+        public static OrderItemOptionResponseDto from(OrderItemOption option) {
+            return OrderItemOptionResponseDto.builder()
+                    .optionId(option.getOptionId())
+                    .optionName(option.getOptionName())
+                    .optionItemId(option.getOptionItemId())
+                    .optionItemName(option.getOptionItemName())
+                    .extraPrice(option.getExtraPrice())
+                    .build();
         }
     }
 }

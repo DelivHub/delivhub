@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,5 +39,8 @@ public class OrderRequestDto {
 
         @Min(value = 1, message = "수량은 1개 이상이어야 합니다.")
         private Integer quantity;
+
+        @Builder.Default
+        private List<UUID> optionItemIds = new ArrayList<>();
     }
 }

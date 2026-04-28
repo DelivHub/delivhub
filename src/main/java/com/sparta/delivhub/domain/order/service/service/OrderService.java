@@ -1,10 +1,17 @@
 package com.sparta.delivhub.domain.order.service.service;
 
+import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
+import com.sparta.delivhub.domain.menu.entity.Menu;
+import com.sparta.delivhub.domain.menu.repository.MenuRepository;
+import com.sparta.delivhub.domain.option.entity.OptionItem;
+import com.sparta.delivhub.domain.option.entity.OptionType;
+import com.sparta.delivhub.domain.option.repository.OptionItemRepository;
 import com.sparta.delivhub.domain.order.service.dto.OrderRequestDto;
 import com.sparta.delivhub.domain.order.service.dto.OrderResponseDto;
 import com.sparta.delivhub.domain.order.service.entity.Order;
 import com.sparta.delivhub.domain.order.service.entity.OrderItem;
+import com.sparta.delivhub.domain.order.service.entity.OrderItemOption;
 import com.sparta.delivhub.domain.order.service.entity.OrderStatus;
 import com.sparta.delivhub.domain.order.service.exception.OrderCancellationNotAllowedException;
 import com.sparta.delivhub.domain.order.service.exception.OrderNotFoundException;
@@ -23,7 +30,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +43,8 @@ public class OrderService {
     private static final int ORDER_CANCEL_LIMIT_MINUTES = 5;
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
+    private final MenuRepository menuRepository;
+    private final OptionItemRepository optionItemRepository;
 
     @Transactional
     public OrderResponseDto createOrder(OrderRequestDto requestDto, String userId) {
@@ -40,12 +52,36 @@ public class OrderService {
         List<OrderItem> orderItems = new java.util.ArrayList<>();
 
         for (OrderRequestDto.OrderItemRequestDto itemDto : requestDto.getItems()) {
-            long unitPrice = getActualMenuPrice(itemDto.getMenuId());
+            Menu menu = menuRepository.findByIdAndDeletedAtIsNull(itemDto.getMenuId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MENU_NOT_FOUND_ON_READ));
+
+            validateMenuBelongsToStore(menu, requestDto.getStoreId());
+            List<OptionItem> optionItems = getOptionItems(itemDto.getOptionItemIds());
+            validateOptionItemsBelongToMenu(optionItems, itemDto.getMenuId());
+            validateSingleOptionSelection(optionItems);
+
+            long optionExtraPrice = optionItems.stream()
+                    .mapToLong(OptionItem::getExtraPrice)
+                    .sum();
+
+            long unitPrice = menu.getPrice().longValue() + optionExtraPrice;
+
             OrderItem orderItem = OrderItem.builder()
                     .menuId(itemDto.getMenuId())
                     .quantity(itemDto.getQuantity())
                     .unitPrice(unitPrice)
                     .build();
+            for (OptionItem optionItem : optionItems) {
+                OrderItemOption orderItemOption = OrderItemOption.builder()
+                        .optionId(optionItem.getOption().getId())
+                        .optionName(optionItem.getOption().getName())
+                        .optionItemId(optionItem.getId())
+                        .optionItemName(optionItem.getName())
+                        .extraPrice(optionItem.getExtraPrice())
+                        .build();
+
+                orderItem.addOption(orderItemOption);
+            }
             orderItems.add(orderItem);
             totalPrice += unitPrice * itemDto.getQuantity();
         }
@@ -152,15 +188,61 @@ public class OrderService {
                 .orElseThrow(OrderNotFoundException::new);
     }
 
+    private List<OptionItem> getOptionItems(List<UUID> optionItemIds) {
+        if (optionItemIds == null || optionItemIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<OptionItem> optionItems = optionItemRepository.findByIdInAndDeletedAtIsNull(optionItemIds);
+
+        if (optionItems.size() != optionItemIds.size()) {
+            throw new BusinessException(ErrorCode.OPTION_ITEM_NOT_FOUND);
+        }
+
+        Map<UUID, OptionItem> optionItemMap = optionItems.stream()
+                .collect(Collectors.toMap(OptionItem::getId, Function.identity()));
+
+        return optionItemIds.stream()
+                .map(optionItemMap::get)
+                .toList();
+    }
+
+    private void validateMenuBelongsToStore(Menu menu, UUID storeId) {
+        if (!menu.getStore().getId().equals(storeId)) {
+            throw new BusinessException(ErrorCode.MENU_NOT_FOUND_ON_READ);
+        }
+    }
+
+    private void validateOptionItemsBelongToMenu(List<OptionItem> optionItems, UUID menuId) {
+        boolean hasInvalidOptionItem = optionItems.stream()
+                .anyMatch(optionItem -> !optionItem.getOption().getMenu().getId().equals(menuId));
+
+        if (hasInvalidOptionItem) {
+            throw new BusinessException(ErrorCode.OPTION_ITEM_NOT_FOUND);
+        }
+    }
+
+    private void validateSingleOptionSelection(List<OptionItem> optionItems) {
+        Map<UUID, Long> selectedCountByOptionGroup = optionItems.stream()
+                .filter(optionItem -> optionItem.getOption().getType() == OptionType.SINGLE)
+                .collect(Collectors.groupingBy(
+                        optionItem -> optionItem.getOption().getId(),
+                        Collectors.counting()
+                ));
+
+        boolean hasDuplicatedSingleOption = selectedCountByOptionGroup.values().stream()
+                .anyMatch(count -> count > 1);
+
+        if (hasDuplicatedSingleOption) {
+            throw new BusinessException(ErrorCode.OPTION_ITEM_VALIDATION_ERROR);
+        }
+    }
+
     private int validatePageSize(int size) {
         if (size == 10 || size == 30 || size == 50) {
             return size;
         }
         return 10;
-    }
-
-    private long getActualMenuPrice(UUID menuId) {
-        return 15000L;
     }
 
     private List<UUID> getOwnerStoreIds(String userId) {
