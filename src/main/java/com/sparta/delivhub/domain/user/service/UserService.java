@@ -10,6 +10,7 @@ import com.sparta.delivhub.domain.user.dto.UserResponse;
 import com.sparta.delivhub.domain.user.entity.User;
 import com.sparta.delivhub.domain.user.entity.UserRole;
 import com.sparta.delivhub.domain.user.repository.UserRepository;
+import com.sparta.delivhub.security.TokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +27,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TokenService tokenService;
 
     public PageResponse<UserResponse> getUsers(
             String keyword,
@@ -124,15 +126,13 @@ public class UserService {
         }
 
         user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
-
-        // todo : 토큰 무효화
+        tokenService.deleteRefreshToken(username);
     }
 
     @Transactional
     public void deleteUser(String username, String deletedBy) {
         User user = findUserByUsername(username);
         user.softDelete(deletedBy);
-
-        // todo : 토큰 무효화
+        tokenService.deleteRefreshToken(username);
     }
 }
