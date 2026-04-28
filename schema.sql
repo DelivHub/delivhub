@@ -1,6 +1,7 @@
 CREATE TABLE p_category (
                             id           UUID         NOT NULL,
                             name         VARCHAR(100) NOT NULL,
+                            is_hidden    BOOLEAN      NOT NULL DEFAULT false,
                             created_at   TIMESTAMP    NOT NULL DEFAULT now(),
                             created_by   VARCHAR(100) NULL,
                             updated_at   TIMESTAMP    NULL,
@@ -17,7 +18,7 @@ CREATE TABLE p_area (
                         name       VARCHAR(100) NOT NULL,
                         city       VARCHAR(100) NOT NULL,
                         district   VARCHAR(100) NOT NULL,
-                        is_active  BOOLEAN      NOT NULL DEFAULT true,
+                        is_hidden  BOOLEAN    NOT NULL DEFAULT false,
                         created_at TIMESTAMP    NOT NULL DEFAULT now(),
                         created_by VARCHAR(100) NULL,
                         updated_at TIMESTAMP    NULL,
@@ -110,7 +111,7 @@ CREATE TABLE p_option (
                           id          UUID           NOT NULL,
                           menu_id     UUID           NOT NULL,
                           name        VARCHAR(100)   NOT NULL,
-                          extra_price INTEGER        NOT NULL,
+                          type        VARCHAR(20)    NOT NULL,
                           created_at  TIMESTAMP      NOT NULL DEFAULT now(),
                           created_by  VARCHAR(100)   NULL,
                           updated_at  TIMESTAMP      NULL,
@@ -120,6 +121,22 @@ CREATE TABLE p_option (
 
                           CONSTRAINT pk_options      PRIMARY KEY (id),
                           CONSTRAINT fk_options_menu FOREIGN KEY (menu_id) REFERENCES p_menu (id)
+);
+
+CREATE TABLE p_option_item (
+                               id          UUID           NOT NULL,
+                               option_id   UUID           NOT NULL,
+                               name        VARCHAR(100)   NOT NULL,
+                               extra_price BIGINT         NOT NULL DEFAULT 0,
+                               created_at  TIMESTAMP      NOT NULL DEFAULT now(),
+                               created_by  VARCHAR(100)   NULL,
+                               updated_at  TIMESTAMP      NULL,
+                               updated_by  VARCHAR(100)   NULL,
+                               deleted_at  TIMESTAMP      NULL,
+                               deleted_by  VARCHAR(100)   NULL,
+
+                               CONSTRAINT pk_option_items        PRIMARY KEY (id),
+                               CONSTRAINT fk_option_items_option FOREIGN KEY (option_id) REFERENCES p_option (id)
 );
 
 CREATE TABLE p_order (
