@@ -21,7 +21,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @SQLDelete(sql = "UPDATE p_store SET deleted_at = NOW() WHERE id = ?")
-@SQLRestriction("deleted_at IS NULL AND is_hidden = true")
+@SQLRestriction("deleted_at IS NULL AND is_hidden = false")
 public class Store extends BaseEntity {
 
     @Id
@@ -53,7 +53,7 @@ public class Store extends BaseEntity {
 
     @Builder.Default
     @Column(name = "is_hidden", nullable = false)
-    private Boolean isHidden = true;
+    private Boolean isHidden = false;
 
     @Builder.Default
     @Column(name = "average_rating", nullable = false, precision = 2, scale = 1)
