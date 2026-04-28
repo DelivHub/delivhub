@@ -121,7 +121,7 @@ class MenuServiceTest {
     void getMenu() {
         // given
         when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
-        when(optionRepository.findByMenuIdAndDeletedAtIsNull(menuId)).thenReturn(List.of());
+        when(optionRepository.findAllByMenuIdWithItems(menuId)).thenReturn(List.of()); // 수정
 
         // when
         ResponseMenuDto response = menuService.getMenu(menuId);
@@ -136,7 +136,7 @@ class MenuServiceTest {
         // given
         UpdateMenuDto request = new UpdateMenuDto();
         when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
-        when(optionRepository.findByMenuIdAndDeletedAtIsNull(menuId)).thenReturn(List.of());
+        when(optionRepository.findAllByMenuIdWithItems(menuId)).thenReturn(List.of());
 
         // when
         ResponseMenuDto response = menuService.updateMenu(menuId, request, null);
