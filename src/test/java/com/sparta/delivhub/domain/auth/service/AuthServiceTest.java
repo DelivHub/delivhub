@@ -2,14 +2,13 @@ package com.sparta.delivhub.domain.auth.service;
 
 import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
-import com.sparta.delivhub.domain.auth.dto.LoginRequest;
-import com.sparta.delivhub.domain.auth.dto.LoginResponse;
-import com.sparta.delivhub.domain.auth.dto.SignupRequest;
-import com.sparta.delivhub.domain.auth.dto.SignupResponse;
+import com.sparta.delivhub.domain.auth.dto.*;
 import com.sparta.delivhub.domain.user.entity.User;
 import com.sparta.delivhub.domain.user.entity.UserRole;
 import com.sparta.delivhub.domain.user.repository.UserRepository;
 import com.sparta.delivhub.security.JwtTokenProvider;
+import com.sparta.delivhub.security.TokenService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,8 +37,22 @@ class AuthServiceTest {
     @Mock
     private JwtTokenProvider jwtTokenProvider;
 
+    @Mock
+    private TokenService tokenService;
+
     @InjectMocks
     private AuthService authService;
+
+    private User user;
+
+    @BeforeEach
+    void setUp() {
+        user = User.builder()
+                .username("user01")
+                .password("encodedPassword")
+                .userRole(UserRole.CUSTOMER)
+                .build();
+    }
 
     @Test
     @DisplayName("회원가입_성공")
@@ -115,12 +128,6 @@ class AuthServiceTest {
     @DisplayName("로그인_성공")
     void loginSuccess() {
         //given
-        User user = User.builder()
-                .username("user01")
-                .password("encodedPassword")
-                .userRole(UserRole.CUSTOMER)
-                .build();
-
         LoginRequest request = LoginRequest.builder()
                 .username("user01")
                 .password("Password1!")
@@ -129,14 +136,18 @@ class AuthServiceTest {
         given(userRepository.findByUsername("user01")).willReturn(Optional.of(user));
         given(passwordEncoder.matches("Password1!", user.getPassword())).willReturn(true);
         given(jwtTokenProvider.createAccessToken(eq("user01"), anyList())).willReturn("access-token");
+        given(jwtTokenProvider.createRefreshToken("user01")).willReturn("refresh-token");
+        given(jwtTokenProvider.getRemainingExpiration("refresh-token")).willReturn(604800000L);
 
         //when
         LoginResponse response = authService.login(request);
 
         //then
         assertThat(response.getAccessToken()).isEqualTo("access-token");
+        assertThat(response.getRefreshToken()).isEqualTo("refresh-token");
         assertThat(response.getUsername()).isEqualTo("user01");
         assertThat(response.getRole()).isEqualTo(UserRole.CUSTOMER);
+        verify(tokenService).saveRefreshToken(eq("user01"), eq("refresh-token"), anyLong());
     }
 
     @Test
@@ -161,12 +172,6 @@ class AuthServiceTest {
     @DisplayName("로그인_실패_탈퇴_계정")
     void login_fail_deactivatedAccount() {
         //given
-        User user = User.builder()
-                .username("user01")
-                .password("encodedPassword")
-                .userRole(UserRole.CUSTOMER)
-                .build();
-
         user.softDelete("admin");
 
         LoginRequest request = LoginRequest.builder()
@@ -187,12 +192,6 @@ class AuthServiceTest {
     @DisplayName("로그인_실패_비밀번호_불일치")
     void login_fail_wrongPassword() {
         //given
-        User user = User.builder()
-                .username("user01")
-                .password("encodedPassword")
-                .userRole(UserRole.CUSTOMER)
-                .build();
-
         LoginRequest request = LoginRequest.builder()
                 .username("user01")
                 .password("Password1!")
@@ -205,5 +204,60 @@ class AuthServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting(e -> ((BusinessException) e).getErrorCode())
                 .isEqualTo(ErrorCode.INVALID_CREDENTIALS);
+    }
+
+    @Test
+    @DisplayName("로그아웃_성공")
+    void logout_success() {
+        // when
+        authService.logout("user01");
+
+        // then
+        verify(tokenService).deleteRefreshToken("user01");
+    }
+
+    @Test
+    @DisplayName("AT_재발급_성공")
+    void reissue_success() {
+        // given
+        given(jwtTokenProvider.validateToken("refresh-token")).willReturn(true);
+        given(jwtTokenProvider.getUsername("refresh-token")).willReturn("user01");
+        given(tokenService.getRefreshToken("user01")).willReturn("refresh-token");
+        given(userRepository.findByUsernameAndDeletedAtIsNull("user01")).willReturn(Optional.of(user));
+        given(jwtTokenProvider.createAccessToken(eq("user01"), anyCollection())).willReturn("new-access-token");
+
+        // when
+        ReissueResponse response = authService.reissue("refresh-token");
+
+        // then
+        assertThat(response.getAccessToken()).isEqualTo("new-access-token");
+    }
+
+    @Test
+    @DisplayName("AT_재발급_실패_유효하지않은_RT")
+    void reissue_fail_invalidToken() {
+        // given
+        given(jwtTokenProvider.validateToken("invalid-token")).willReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> authService.reissue("invalid-token"))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.INVALID_TOKEN);
+    }
+
+    @Test
+    @DisplayName("AT_재발급_실패_RT_없음_로그아웃_상태_RT_삭제")
+    void reissue_fail_tokenNotFound() {
+        // given
+        given(jwtTokenProvider.validateToken("refresh-token")).willReturn(true);
+        given(jwtTokenProvider.getUsername("refresh-token")).willReturn("user01");
+        given(tokenService.getRefreshToken("user01")).willReturn(null);
+
+        // when & then
+        assertThatThrownBy(() -> authService.reissue("refresh-token"))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.INVALID_TOKEN);
     }
 }
