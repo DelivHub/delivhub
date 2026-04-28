@@ -1,5 +1,7 @@
 package com.sparta.delivhub.security;
 
+import com.sparta.delivhub.common.dto.BusinessException;
+import com.sparta.delivhub.common.dto.ErrorCode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.Jwts;
@@ -104,6 +106,14 @@ public class JwtTokenProvider {
     public long getRemainingExpiration(String token) {
         Date expiration = parseClaims(token).getExpiration();
         return expiration.getTime() - System.currentTimeMillis();
+    }
+
+    // 헤더 형식 검증
+    public String extractBearerToken(String bearerToken) {
+        if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
+            throw new BusinessException(ErrorCode.INVALID_TOKEN);
+        }
+        return bearerToken.substring(7);
     }
 
 }
