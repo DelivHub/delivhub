@@ -87,8 +87,8 @@ jobs:
               -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
               -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
               -e GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
-              -e SPRING_DATA_REDIS_HOST="localhost" \
-              -e SPRING_DATA_REDIS_PORT="6379" \
+              -e REDIS_HOST="host.docker.internal" \
+              -e REDIS_PORT="6379" \
               ${{ secrets.DOCKER_USERNAME }}/delivhub-app:$IMAGE_TAG
             
             # 5. 사용하지 않는 이미지 정리 (EC2 용량 확보)
