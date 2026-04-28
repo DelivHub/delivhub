@@ -18,7 +18,7 @@ CREATE TABLE p_area (
                         name       VARCHAR(100) NOT NULL,
                         city       VARCHAR(100) NOT NULL,
                         district   VARCHAR(100) NOT NULL,
-                        is_hidden  BOOLEAN    NOT NULL DEFAULT false,
+                        is_hidden  BOOLEAN      NOT NULL DEFAULT false,
                         created_at TIMESTAMP    NOT NULL DEFAULT now(),
                         created_by VARCHAR(100) NULL,
                         updated_at TIMESTAMP    NULL,
