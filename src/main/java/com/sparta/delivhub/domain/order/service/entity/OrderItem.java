@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -33,6 +35,9 @@ public class OrderItem extends BaseEntity {
     @Column(name = "unit_price", nullable = false)
     private Long unitPrice;
 
+    @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItemOption> options = new ArrayList<>();
+
     @Builder
     public OrderItem(UUID menuId, Integer quantity, Long unitPrice) {
         this.menuId = menuId;
@@ -42,5 +47,10 @@ public class OrderItem extends BaseEntity {
 
     protected void setOrder(Order order) {
         this.order = order;
+    }
+
+    public void addOption(OrderItemOption option) {
+        this.options.add(option);
+        option.setOrderItem(this);
     }
 }

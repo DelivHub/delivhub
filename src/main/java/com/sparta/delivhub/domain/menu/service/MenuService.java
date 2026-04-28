@@ -14,6 +14,7 @@ import com.sparta.delivhub.domain.menu.repository.MenuRepository;
 import com.sparta.delivhub.domain.option.dto.CreateOptionDto;
 import com.sparta.delivhub.domain.option.dto.ResponseOptionDto;
 import com.sparta.delivhub.domain.option.entity.Option;
+import com.sparta.delivhub.domain.option.entity.OptionItem;
 import com.sparta.delivhub.domain.option.repository.OptionRepository;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.store.repository.StoreRepository;
@@ -69,22 +70,16 @@ public class MenuService {
         menuRepository.save(menu);
 
         // 옵션 같이 생성
-        List<Option> options = new ArrayList<>();
-        if (request.getOptions() != null) {
-            for (CreateOptionDto optionDto : request.getOptions()) {
-                Option option = Option.builder()
-                        .menu(menu)
-                        .name(optionDto.getName())
-                        .extraPrice(optionDto.getExtraPrice())
-                        .build();
-                options.add(option);
-            }
+        List<Option> options = createOptions(menu, request.getOptions());
+
+        if (!options.isEmpty()) {
             optionRepository.saveAll(options);
         }
 
         List<ResponseOptionDto> optionDtos = options.stream()
                 .map(ResponseOptionDto::from)
                 .toList();
+
 
         return ResponseMenuDto.from(menu, optionDtos);
     }
@@ -109,7 +104,7 @@ public class MenuService {
         Menu menu = menuRepository.findByIdAndDeletedAtIsNull(menuId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MENU_NOT_FOUND_ON_READ));
 
-        List<ResponseOptionDto> options = optionRepository.findByMenuIdAndDeletedAtIsNull(menuId)
+        List<ResponseOptionDto> options = optionRepository.findAllByMenuIdWithItems(menuId)
                 .stream()
                 .map(ResponseOptionDto::from)
                 .toList();
@@ -125,7 +120,7 @@ public class MenuService {
         // 수정
         menu.update(request.getName(), request.getPrice(), request.getDescription());
 
-        List<ResponseOptionDto> options = optionRepository.findByMenuIdAndDeletedAtIsNull(menuId)
+        List<ResponseOptionDto> options = optionRepository.findAllByMenuIdWithItems(menuId)
                 .stream()
                 .map(ResponseOptionDto::from)
                 .toList();
@@ -145,6 +140,36 @@ public class MenuService {
     public void deleteMenu(UUID menuId, String username) {
         Menu menu = getMenuAndCheckPermission(menuId, username, ErrorCode.MENU_NOT_FOUND_ON_DELETE);
         menu.softDelete(username);
+    }
+
+    // 메뉴 생성 시 옵션 그룹 + 옵션 아이템 생성
+    private List<Option> createOptions(Menu menu, List<CreateOptionDto> optionRequests) {
+        if (optionRequests == null || optionRequests.isEmpty()) {
+            return List.of();
+        }
+
+        return optionRequests.stream()
+                .map(optionRequest -> createOption(menu, optionRequest))
+                .toList();
+    }
+    // 옵션 그룹 생성
+    private Option createOption(Menu menu, CreateOptionDto optionRequest) {
+        Option option = Option.builder()
+                .menu(menu)
+                .name(optionRequest.getName())
+                .type(optionRequest.getType())
+                .build();
+
+        for (CreateOptionDto.Item itemRequest : optionRequest.getItems()) {
+            OptionItem optionItem = OptionItem.builder()
+                    .name(itemRequest.getName())
+                    .extraPrice(itemRequest.getExtraPrice())
+                    .build();
+
+            option.addOptionItem(optionItem);
+        }
+
+        return option;
     }
 
     // 메뉴 조회 + 권한 체크

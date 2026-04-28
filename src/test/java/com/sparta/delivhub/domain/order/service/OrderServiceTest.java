@@ -1,5 +1,8 @@
 package com.sparta.delivhub.domain.order.service;
 
+import com.sparta.delivhub.domain.menu.entity.Menu;
+import com.sparta.delivhub.domain.menu.repository.MenuRepository;
+import com.sparta.delivhub.domain.option.repository.OptionItemRepository;
 import com.sparta.delivhub.domain.order.service.dto.OrderRequestDto;
 import com.sparta.delivhub.domain.order.service.dto.OrderResponseDto;
 import com.sparta.delivhub.domain.order.service.entity.Order;
@@ -43,31 +46,70 @@ class OrderServiceTest {
     @Mock
     private PaymentRepository paymentRepository;
 
+    @Mock
+    private MenuRepository menuRepository;
+
+    @Mock
+    private OptionItemRepository optionItemRepository;
+
     @Test
     @DisplayName("주문 생성 테스트 - 성공")
     void createOrder_Success() {
         // given
         String userId = "user01";
+        UUID menuId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+        UUID optionItemId = UUID.randomUUID();
+        UUID optionId = UUID.randomUUID();
+
         OrderRequestDto requestDto = OrderRequestDto.builder()
-                .storeId(UUID.randomUUID())
+                .storeId(storeId)
                 .addressId(UUID.randomUUID())
                 .request("많이 주세요")
                 .orderType(OrderType.ONLINE)
                 .items(List.of(
                         OrderRequestDto.OrderItemRequestDto.builder()
-                                .menuId(UUID.randomUUID())
+                                .menuId(menuId)
                                 .quantity(2)
+                                .optionItemIds(List.of(optionItemId))
                                 .build()
                 ))
                 .build();
 
+        // Store mock
+        com.sparta.delivhub.domain.store.entity.Store mockStore = mock(com.sparta.delivhub.domain.store.entity.Store.class);
+        when(mockStore.getId()).thenReturn(storeId);
+
+        // Menu mock
+        Menu mockMenu = mock(Menu.class);
+        when(mockMenu.getStore()).thenReturn(mockStore);
+        when(mockMenu.getPrice()).thenReturn(15000);
+        when(mockMenu.getId()).thenReturn(menuId);
+
+        // Option mock (SINGLE 타입)
+        com.sparta.delivhub.domain.option.entity.Option mockOption = mock(com.sparta.delivhub.domain.option.entity.Option.class);
+        when(mockOption.getId()).thenReturn(optionId);
+        when(mockOption.getName()).thenReturn("맵기 선택");
+        when(mockOption.getType()).thenReturn(com.sparta.delivhub.domain.option.entity.OptionType.SINGLE);
+        when(mockOption.getMenu()).thenReturn(mockMenu);
+
+        // OptionItem mock
+        com.sparta.delivhub.domain.option.entity.OptionItem mockOptionItem = mock(com.sparta.delivhub.domain.option.entity.OptionItem.class);
+        when(mockOptionItem.getId()).thenReturn(optionItemId);
+        when(mockOptionItem.getName()).thenReturn("보통");
+        when(mockOptionItem.getExtraPrice()).thenReturn(0L);
+        when(mockOptionItem.getOption()).thenReturn(mockOption);
+
+        when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(mockMenu));
+        when(optionItemRepository.findByIdInAndDeletedAtIsNull(List.of(optionItemId))).thenReturn(List.of(mockOptionItem));
+
         Order order = Order.builder()
                 .userId(userId)
-                .storeId(requestDto.getStoreId())
+                .storeId(storeId)
                 .addressId(requestDto.getAddressId())
                 .request(requestDto.getRequest())
                 .orderType(requestDto.getOrderType())
-                .totalPrice(30000L) // 15000 * 2 (현재 하드코딩된 가격 기준)
+                .totalPrice(30000L)
                 .build();
         ReflectionTestUtils.setField(order, "id", UUID.randomUUID());
 
@@ -79,7 +121,6 @@ class OrderServiceTest {
         // then
         assertNotNull(response);
         assertEquals(userId, order.getUserId());
-        assertEquals(30000L, order.getTotalPrice());
         verify(orderRepository).save(any(Order.class));
     }
 

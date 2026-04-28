@@ -89,6 +89,9 @@ public enum ErrorCode {
     MENU_NOT_FOUND_ON_OPTION(HttpStatus.NOT_FOUND, "OP003", "존재하지 않는 메뉴입니다."),
     OPTION_FORBIDDEN_ON_UPDATE(HttpStatus.FORBIDDEN, "OP005", "본인 가게의 메뉴에 속한 옵션만 수정할 수 있습니다."),
     OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "OP006", "존재하지 않는 옵션입니다."),
+    OPTION_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "OP007", "존재하지 않는 옵션 아이템입니다."),
+    OPTION_ITEM_VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "OP008", "옵션 아이템 정보가 올바르지 않습니다."),
+    OPTION_TYPE_VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "OP009", "옵션 선택 방식이 올바르지 않습니다."),
 
     // 10. Order (주문 로직)
     ORDER_PARAM_MISSING(HttpStatus.BAD_REQUEST, "OD001", "필수 파라미터 누락"),
