@@ -100,4 +100,10 @@ public class JwtTokenProvider {
         }
     }
 
+    // Token 남은 만료 시간 - Redis RT 저장 TTL 설정용
+    public long getRemainingExpiration(String token) {
+        Date expiration = parseClaims(token).getExpiration();
+        return expiration.getTime() - System.currentTimeMillis();
+    }
+
 }
