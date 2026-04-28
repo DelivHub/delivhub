@@ -16,7 +16,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @SQLDelete(sql = "UPDATE p_area SET deleted_at = NOW() WHERE id = ?")
-@SQLRestriction("deleted_at IS NULL AND is_active = false")
+@SQLRestriction("deleted_at IS NULL AND is_hidden = ture")
 public class Area extends BaseEntity {
 
     @Id
@@ -35,13 +35,13 @@ public class Area extends BaseEntity {
     private String district;
 
     @Builder.Default
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
+    @Column(name = "is_hidden", nullable = false)
+    private Boolean isHidden = false;
 
-    public void updateArea(String name, String city, String district, Boolean isActive) {
+    public void updateArea(String name, String city, String district, Boolean isHidden) {
         this.name = name;
         this.city = city;
         this.district = district;
-        this.isActive = isActive;
+        this.isHidden = isHidden;
     }
 }
