@@ -69,5 +69,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
+    // reissue 엔드포인트는 필터 스킵
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return request.getServletPath().equals("/api/v1/auth/reissue");
+    }
 
 }

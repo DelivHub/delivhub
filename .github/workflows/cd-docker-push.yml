@@ -12,45 +12,85 @@ concurrency:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    # 배포 단계에서 사용할 이미지 태그를 결정하기 위한 output 설정
+    outputs:
+      image_tag: ${{ github.ref_name == 'main' && 'latest' || 'dev-latest' }}
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
-      with:
-        # 주요 브랜치에서만 캐시를 업데이트하도록 설정
-        cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-    - name: Build bootJar with Gradle
-      # 테스트를 제외하고 배포용 jar만 빠르게 생성 (CI 워크플로우가 병렬로 테스트 중임)
-      run: ./gradlew clean bootJar -x test
+      - name: Build bootJar with Gradle
+        run: ./gradlew clean bootJar -x test
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        push: true
-        tags: |
-          ${{ secrets.DOCKER_USERNAME }}/delivhub:${{ github.ref_name == 'main' && 'latest' || 'dev-latest' }}
-          ${{ secrets.DOCKER_USERNAME }}/delivhub:${{ github.sha }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/delivhub-app:${{ github.ref_name == 'main' && 'latest' || 'dev-latest' }}
+            ${{ secrets.DOCKER_USERNAME }}/delivhub-app:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            
+            IMAGE_TAG=${{ github.ref_name == 'main' && 'latest' || 'dev-latest' }}
+            
+            # 2. 기존 컨테이너 중지 및 삭제
+            sudo docker stop my-server || true
+            sudo docker rm my-server || true
+            
+            # 3. 최신 이미지 가져오기
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/delivhub-app:$IMAGE_TAG
+            
+            # 4. 서버 실행 (유저님이 아까 수동으로 성공했던 그 설정!)
+            sudo docker run -d \
+              --name my-server \
+              -p 8080:8080 \
+              -e DB_URL="${{ secrets.DB_URL }}" \
+              -e DB_USERNAME="${{ secrets.DB_USERNAME }}" \
+              -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+              -e GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
+              -e REDIS_HOST="host.docker.internal" \
+              -e REDIS_PORT="6379" \
+              --add-host=host.docker.internal:host-gateway \
+              ${{ secrets.DOCKER_USERNAME }}/delivhub-app:$IMAGE_TAG
+            
+            # 5. 사용하지 않는 이미지 정리 (EC2 용량 확보)
+            sudo docker image prune -f

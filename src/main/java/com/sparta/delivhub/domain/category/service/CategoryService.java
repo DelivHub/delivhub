@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
+// test commit
 @Service
 @RequiredArgsConstructor
 public class CategoryService {
@@ -67,7 +68,7 @@ public class CategoryService {
 
         category.updateCategory(
                 categoryRequestDto.getName(),
-                categoryRequestDto.getIsActive()
+                categoryRequestDto.getIsHidden()
         );
 
         return CategoryIdResponseDto.builder()

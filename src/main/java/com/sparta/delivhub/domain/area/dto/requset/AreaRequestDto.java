@@ -19,7 +19,7 @@ public class AreaRequestDto {
     private String name;
 
     @NotNull(message = "공개 여부는 필수입니다.")
-    private Boolean isActive = true;
+    private Boolean isHidden = false;
 
     public AreaRequestDto(String city, String district, String name) {
         this.name = name;

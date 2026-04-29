@@ -10,6 +10,7 @@ import com.sparta.delivhub.domain.user.dto.UserResponse;
 import com.sparta.delivhub.domain.user.entity.User;
 import com.sparta.delivhub.domain.user.entity.UserRole;
 import com.sparta.delivhub.domain.user.repository.UserRepository;
+import com.sparta.delivhub.security.TokenService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,9 @@ class UserServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private TokenService tokenService;
 
     @InjectMocks
     private UserService userService;
@@ -269,6 +273,7 @@ class UserServiceTest {
 
         // then
         verify(passwordEncoder).encode("NewPassword1!");
+        verify(tokenService).deleteRefreshToken("user01");
     }
 
     @Test
@@ -316,8 +321,9 @@ class UserServiceTest {
         userService.deleteUser("user01", "admin");
 
         // then
-        verify(userRepository).findByUsernameAndDeletedAtIsNull("user01");
         assertThat(user.getDeletedAt()).isNotNull();
+        verify(userRepository).findByUsernameAndDeletedAtIsNull("user01");
+        verify(tokenService).deleteRefreshToken("user01");
     }
 
     @Test
