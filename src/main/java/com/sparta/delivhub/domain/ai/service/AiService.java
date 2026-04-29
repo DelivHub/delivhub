@@ -66,6 +66,7 @@ public class AiService {
                 .responseText(result)
                 .requestType("PRODUCT_DESCRIPTION")
                 .createdAt(LocalDateTime.now())
+                .createdBy(userId)
                 .build());
 
         return result;
