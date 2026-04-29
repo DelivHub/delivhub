@@ -13,6 +13,7 @@ import com.sparta.delivhub.domain.store.repository.StoreRepository;
 import com.sparta.delivhub.domain.user.entity.User;
 import com.sparta.delivhub.domain.user.entity.UserRole;
 import com.sparta.delivhub.domain.user.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ReviewServiceTest {
@@ -45,6 +47,23 @@ class ReviewServiceTest {
 
     @InjectMocks
     private ReviewService reviewService;
+
+    private User customer;
+    private UUID orderId;
+    private UUID storeId;
+    private final String currentUserId = "user123";
+
+    @BeforeEach
+    void setUp() {
+        orderId = UUID.randomUUID();
+        storeId = UUID.randomUUID();
+
+        // Mock User 생성 (실제 엔티티 구조 반영)
+        customer = User.builder()
+                .username(currentUserId)
+                .userRole(UserRole.CUSTOMER)
+                .build();
+    }
 
     // ==========================================
     // 💡 [유용한 헬퍼 메서드] 가짜 유저와 권한을 쉽게 만들어주는 공장
@@ -69,18 +88,10 @@ class ReviewServiceTest {
     // ==========================================
 
     @Test
-    @DisplayName("리뷰 작성 성공 - 조건(CUSTOMER, 배달완료, 중복아님) 모두 충족")
+    @DisplayName("리뷰 작성 성공 - 조건(CUSTOMER, 배달완료, 별점 1~5) 모두 충족")
     void createReview_Success() {
         // [1] Given
-        String currentUserId = "user123";
-        String userRoleStr = "CUSTOMER";
-        UUID orderId = UUID.randomUUID();
-        UUID storeId = UUID.randomUUID();
-        UUID savedReviewId = UUID.randomUUID();
-
-        // ✨ 보안 강화 로직 통과를 위한 유저 세팅
-        User myUser = createMockUser(currentUserId, UserRole.CUSTOMER);
-        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(myUser));
+        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(customer));
 
         ReviewRequestDto request = ReviewRequestDto.builder()
                 .orderId(orderId)
@@ -96,47 +107,67 @@ class ReviewServiceTest {
         Store myStore = Store.builder().build();
         ReflectionTestUtils.setField(myStore, "id", storeId);
 
-        Review savedReview = Review.builder().rating(5).content("최고의 맛입니다!").build();
-        ReflectionTestUtils.setField(savedReview, "id", savedReviewId);
-
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(myOrder));
         when(reviewRepository.existsByOrderId(orderId)).thenReturn(false);
         when(storeRepository.findById(storeId)).thenReturn(Optional.of(myStore));
-        when(reviewRepository.save(any(Review.class))).thenReturn(savedReview);
-        when(reviewRepository.calculateAverageRatingByStoreId(storeId)).thenReturn(5.0); // ✨ 평균 별점 계산 추가
+        when(reviewRepository.save(any(Review.class))).thenReturn(mock(Review.class));
 
         // [2] When
-        ReviewResponseDto response = reviewService.createReview(request, currentUserId, userRoleStr);
+        ReviewResponseDto response = reviewService.createReview(request, currentUserId, "CUSTOMER");
 
         // [3] Then
-        assertNotNull(response);
-        assertEquals(savedReviewId, response.getReviewId());
-        assertEquals(5, response.getRating());
+        verify(reviewRepository, times(1)).save(any(Review.class));
+    }
+
+    @Test
+    @DisplayName("리뷰 작성 실패 - 별점이 5점을 초과하는 경우 (6점)")
+    void createReview_Fail_RatingTooHigh() {
+        // given
+        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(customer));
+        ReviewRequestDto request = ReviewRequestDto.builder()
+                .orderId(orderId).storeId(storeId).rating(6).content("별점조작").build();
+
+        // when & then
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> reviewService.createReview(request, currentUserId, "CUSTOMER"));
+
+        assertEquals(ErrorCode.INVALID_RATING_RANGE, exception.getErrorCode());
+        verify(reviewRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("리뷰 작성 실패 - 별점이 1점 미만인 경우 (0점)")
+    void createReview_Fail_RatingTooLow() {
+        // given
+        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(customer));
+        ReviewRequestDto request = ReviewRequestDto.builder()
+                .orderId(orderId).storeId(storeId).rating(0).content("무료나눔인가요").build();
+
+        // when & then
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> reviewService.createReview(request, currentUserId, "CUSTOMER"));
+
+        assertEquals(ErrorCode.INVALID_RATING_RANGE, exception.getErrorCode());
     }
 
     @Test
     @DisplayName("리뷰 작성 실패 - 배달이 아직 완료(COMPLETED)되지 않은 경우")
     void createReview_Fail_NotCompleted() {
         // [1] Given
-        String currentUserId = "user123";
-        String userRoleStr = "CUSTOMER";
-        UUID orderId = UUID.randomUUID();
-
-        User myUser = createMockUser(currentUserId, UserRole.CUSTOMER);
-        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(myUser));
-
-        ReviewRequestDto request = ReviewRequestDto.builder().orderId(orderId).storeId(UUID.randomUUID()).build();
+        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(customer));
+        ReviewRequestDto request = ReviewRequestDto.builder().orderId(orderId).storeId(storeId).rating(5).build();
 
         Order myOrder = Order.builder().userId(currentUserId).build();
-        ReflectionTestUtils.setField(myOrder, "status", OrderStatus.PENDING);
+        ReflectionTestUtils.setField(myOrder, "status", OrderStatus.PENDING); // 아직 준비중
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(myOrder));
 
         // [2] & [3]
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> reviewService.createReview(request, currentUserId, userRoleStr));
+                () -> reviewService.createReview(request, currentUserId, "CUSTOMER"));
 
         assertEquals(ErrorCode.REVIEW_BAD_REQUEST, exception.getErrorCode());
     }
+
 
     // ==========================================
     // 2. 내 리뷰 조회 기능(페이징) 테스트

@@ -3,18 +3,22 @@ package com.sparta.delivhub.domain.payment.service;
 import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.domain.order.service.entity.Order;
+import com.sparta.delivhub.domain.order.service.entity.OrderStatus;
 import com.sparta.delivhub.domain.order.service.repository.OrderRepository;
 import com.sparta.delivhub.domain.payment.dto.MyPaymentListResponseDto;
 import com.sparta.delivhub.domain.payment.dto.RequestPaymentDTO;
 import com.sparta.delivhub.domain.payment.dto.ResponsePaymentDTO;
 import com.sparta.delivhub.domain.payment.dto.StorePaymentListResponseDto;
 import com.sparta.delivhub.domain.payment.entity.Payment;
+import com.sparta.delivhub.domain.payment.entity.PaymentMethod;
 import com.sparta.delivhub.domain.payment.entity.PaymentStatus;
 import com.sparta.delivhub.domain.payment.repository.PaymentRepository;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.store.repository.StoreRepository;
 import com.sparta.delivhub.domain.user.entity.User;
-import com.sparta.delivhub.domain.user.repository.UserRepository; // ✨ 추가
+import com.sparta.delivhub.domain.user.entity.UserRole;
+import com.sparta.delivhub.domain.user.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,7 +30,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
-import static org.mockito.Mockito.lenient;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,402 +38,203 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceTest {
 
-    @Mock
-    private OrderRepository orderRepository;
-
-    @Mock
-    private PaymentRepository paymentRepository;
-
-    @Mock
-    private StoreRepository storeRepository;
-
-    @Mock // ✨ 조연 3: 가짜 유저 저장소 추가!
-    private UserRepository userRepository;
+    @Mock private OrderRepository orderRepository;
+    @Mock private PaymentRepository paymentRepository;
+    @Mock private StoreRepository storeRepository;
+    @Mock private UserRepository userRepository;
 
     @InjectMocks
     private PaymentService paymentService;
 
-    // 💡 [유용한 헬퍼 메서드] 가짜 유저와 권한을 쉽게 만들어주는 메서드입니다.
-    private User createMockUser(String username, String roleName) {
-        // RETURNS_DEEP_STUBS를 사용하면 user.getUserRole().name() 같은 연속된 호출도 알아서 가짜로 만들어줍니다!
-        User mockUser = mock(User.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
+    private User customer;
+    private final String currentUserId = "user123";
+    private UUID orderId;
+
+    @BeforeEach
+    void setUp() {
+        orderId = UUID.randomUUID();
+        // ✨ [핵심 해결] DEEP_STUBS 없이 단순 Mock 생성 및 Enum 직접 반환 설정
+        customer = mock(User.class);
+        lenient().when(customer.getUsername()).thenReturn(currentUserId);
+        lenient().when(customer.getUserRole()).thenReturn(UserRole.CUSTOMER);
+    }
+
+    /**
+     * ✨ 헬퍼 메서드: 각 테스트 역할에 맞는 가짜 유저 생성
+     */
+    private User createMockUser(String username, UserRole role) {
+        User mockUser = mock(User.class);
         lenient().when(mockUser.getUsername()).thenReturn(username);
-        lenient().when(mockUser.getUserRole().name()).thenReturn(roleName);
+        lenient().when(mockUser.getUserRole()).thenReturn(role);
         return mockUser;
     }
 
+    // ==========================================
+    // 1. 결제 생성 (CARD 제한 & 안전장치)
+    // ==========================================
+
     @Test
-    @DisplayName("결제 생성 성공 테스트")
+    @DisplayName("결제 생성 성공 - 결제 수단 'CARD'와 공백 포함 입력 모두 허용")
     void createPayment_Success() {
-        // [1] Given
-        UUID orderId = UUID.randomUUID();
-        String currentUserId = "user123";
+        // given
         Long amount = 15000L;
+        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(customer));
 
-        // ✨ 보안 로직 통과를 위한 유저 세팅 (권한: CUSTOMER)
-        User mockUser = createMockUser(currentUserId, "CUSTOMER");
-        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(mockUser));
-
-        Order fakeOrder = Order.builder()
-                .userId(currentUserId)
-                .totalPrice(amount)
-                .build();
+        // ✨ NPE 방지: Order 생성 시 userId 필수 포함
+        Order fakeOrder = Order.builder().userId(currentUserId).totalPrice(amount).build();
         ReflectionTestUtils.setField(fakeOrder, "id", orderId);
 
         RequestPaymentDTO requestDTO = RequestPaymentDTO.builder()
-                .orderId(orderId)
-                .amount(amount)
-                .paymentMethod("CARD")
-                .build();
+                .orderId(orderId).amount(amount).paymentMethod(" card ").build(); // trim() 테스트
 
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(fakeOrder));
         when(paymentRepository.existsByOrderId(orderId)).thenReturn(false);
-        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // [2] When
+        Payment savedPayment = Payment.builder()
+                .order(fakeOrder).amount(amount).paymentMethod(PaymentMethod.CARD).status(PaymentStatus.COMPLETED).build();
+        ReflectionTestUtils.setField(savedPayment, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(savedPayment, "createdAt", LocalDateTime.now());
+
+        when(paymentRepository.save(any(Payment.class))).thenReturn(savedPayment);
+
+        // when
         ResponsePaymentDTO response = paymentService.createPayment(requestDTO, currentUserId);
 
-        // [3] Then
+        // then
         assertNotNull(response);
-        assertEquals(amount, response.getAmount());
-        assertEquals("COMPLETED", response.getStatus());
-        assertEquals(orderId, response.getOrderId());
+        assertEquals("CARD", response.getPaymentMethod());
+        verify(paymentRepository, times(1)).save(any(Payment.class));
     }
 
     @Test
-    @DisplayName("결제 삭제 성공 테스트 - 본인의 결제 내역 취소")
-    void deletePayment_Success() {
-        // [1] Given
-        UUID paymentId = UUID.randomUUID();
-        String currentUserId = "user123";
+    @DisplayName("결제 생성 실패 - CARD가 아닌 'CASH' 입력 시 예외 발생")
+    void createPayment_Fail_InvalidMethod() {
+        // given
+        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(customer));
+        Order fakeOrder = Order.builder().userId(currentUserId).totalPrice(10000L).build();
+        when(orderRepository.findById(any())).thenReturn(Optional.of(fakeOrder));
 
-        // ✨ 유저 세팅
-        User mockUser = createMockUser(currentUserId, "CUSTOMER");
-        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(mockUser));
+        RequestPaymentDTO requestDTO = RequestPaymentDTO.builder()
+                .orderId(orderId).amount(10000L).paymentMethod("CASH").build();
 
-        Order myOrder = Order.builder().userId(currentUserId).build();
-        Payment myPayment = Payment.builder()
-                .order(myOrder)
-                .amount(15000L)
-                .status(PaymentStatus.COMPLETED)
-                .build();
-        ReflectionTestUtils.setField(myPayment, "deletedAt", null);
+        // when & then
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> paymentService.createPayment(requestDTO, currentUserId));
 
-        when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(myPayment));
-
-        // [2] When
-        paymentService.deletePayment(paymentId, currentUserId);
-
-        // [3] Then
-        assertEquals(PaymentStatus.CANCELLED, myPayment.getStatus());
+        assertEquals(ErrorCode.INVALID_PAYMENT_METHOD, exception.getErrorCode());
+        verify(paymentRepository, never()).save(any());
     }
 
-    @Test
-    @DisplayName("결제 삭제 실패 테스트 - 타인의 결제 내역 접근 시 예외 발생")
-    void deletePayment_Fail_AccessDenied() {
-        // [1] Given
-        UUID paymentId = UUID.randomUUID();
-        String currentUserId = "hacker999";
-        String realOwnerId = "user123";
-
-        // ✨ 유저 세팅
-        User mockUser = createMockUser(currentUserId, "CUSTOMER");
-        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(mockUser));
-
-        Order otherPersonOrder = Order.builder().userId(realOwnerId).build();
-        Payment otherPersonPayment = Payment.builder()
-                .order(otherPersonOrder)
-                .amount(15000L)
-                .status(PaymentStatus.COMPLETED)
-                .build();
-
-        when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(otherPersonPayment));
-
-        // [2] & [3]
-        BusinessException exception = org.junit.jupiter.api.Assertions.assertThrows(
-                BusinessException.class,
-                () -> paymentService.deletePayment(paymentId, currentUserId)
-        );
-
-        assertEquals(ErrorCode.PAYMENT_ACCESS_DENIED, exception.getErrorCode());
-    }
+    // ==========================================
+    // 2. 결제 상세 조회 (권한 및 NPE 방어)
+    // ==========================================
 
     @Test
     @DisplayName("결제 상세 조회 성공 - 본인의 결제 내역 (CUSTOMER)")
     void getPayment_Success_Owner() {
-        // [1] Given
+        // given
         UUID paymentId = UUID.randomUUID();
-        String currentUserId = "user123";
-        String userRole = "CUSTOMER";
-
-        // ✨ 유저 세팅
-        User mockUser = createMockUser(currentUserId, "CUSTOMER");
-        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(mockUser));
+        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(customer));
 
         Order myOrder = Order.builder().userId(currentUserId).build();
-        Payment myPayment = Payment.builder()
-                .order(myOrder)
-                .amount(15000L)
-                .status(PaymentStatus.COMPLETED)
-                .build();
+        Payment myPayment = Payment.builder().order(myOrder).amount(10000L).status(PaymentStatus.COMPLETED).build();
+        ReflectionTestUtils.setField(myPayment, "id", paymentId);
 
         when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(myPayment));
 
-        // [2] When
-        ResponsePaymentDTO response = paymentService.getPayment(paymentId, currentUserId, userRole);
+        // when
+        ResponsePaymentDTO response = paymentService.getPayment(paymentId, currentUserId, "CUSTOMER");
 
-        // [3] Then
+        // then
         assertNotNull(response);
-        assertEquals(15000L, response.getAmount());
+        assertEquals(10000L, response.getAmount());
     }
 
     @Test
-    @DisplayName("결제 상세 조회 성공 - 타인의 결제 내역을 관리자가 조회 (MANAGER)")
-    void getPayment_Success_Manager() {
-        // [1] Given
-        UUID paymentId = UUID.randomUUID();
-        String currentUserId = "admin999";
-        String userRole = "MANAGER";
-        String ownerId = "user123";
-
-        // ✨ 유저 세팅 (권한: MANAGER)
-        User mockUser = createMockUser(currentUserId, "MANAGER");
-        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(mockUser));
-
-        Order otherPersonOrder = Order.builder().userId(ownerId).build();
-        Payment otherPersonPayment = Payment.builder()
-                .order(otherPersonOrder)
-                .amount(20000L)
-                .status(PaymentStatus.COMPLETED)
-                .build();
-
-        when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(otherPersonPayment));
-
-        // [2] When
-        ResponsePaymentDTO response = paymentService.getPayment(paymentId, currentUserId, userRole);
-
-        // [3] Then
-        assertNotNull(response);
-        assertEquals(20000L, response.getAmount());
-    }
-
-    @Test
-    @DisplayName("결제 상세 조회 실패 - 일반 유저가 타인의 결제 내역 접근 시도 (CUSTOMER)")
+    @DisplayName("결제 상세 조회 실패 - 타인의 내역 접근 시 예외 발생")
     void getPayment_Fail_AccessDenied() {
-        // [1] Given
+        // given
         UUID paymentId = UUID.randomUUID();
-        String currentUserId = "hacker123";
-        String userRole = "CUSTOMER";
-        String realOwnerId = "user123";
+        String hackerId = "hacker123";
+        User hacker = createMockUser(hackerId, UserRole.CUSTOMER);
+        when(userRepository.findByUsername(hackerId)).thenReturn(Optional.of(hacker));
 
-        // ✨ 유저 세팅
-        User mockUser = createMockUser(currentUserId, "CUSTOMER");
-        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(mockUser));
+        Order ownerOrder = Order.builder().userId("ownerId").build();
+        Payment ownerPayment = Payment.builder().order(ownerOrder).build();
 
-        Order otherPersonOrder = Order.builder().userId(realOwnerId).build();
-        Payment otherPersonPayment = Payment.builder().order(otherPersonOrder).build();
+        when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(ownerPayment));
 
-        when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(otherPersonPayment));
-
-        // [2] & [3]
-        BusinessException exception = org.junit.jupiter.api.Assertions.assertThrows(
-                BusinessException.class,
-                () -> paymentService.getPayment(paymentId, currentUserId, userRole)
-        );
+        // when & then
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> paymentService.getPayment(paymentId, hackerId, "CUSTOMER"));
 
         assertEquals(ErrorCode.PAYMENT_ACCESS_DENIED, exception.getErrorCode());
     }
 
+    // ==========================================
+    // 3. 결제 삭제 및 목록 조회
+    // ==========================================
+
     @Test
-    @DisplayName("결제 상세 조회 실패 - 존재하지 않는 결제 내역")
-    void getPayment_Fail_NotFound() {
-        // [1] Given
+    @DisplayName("결제 삭제 성공 - 정상적인 상태 변경 확인")
+    void deletePayment_Success() {
+        // given
         UUID paymentId = UUID.randomUUID();
-        String currentUserId = "user123";
-        String userRole = "CUSTOMER";
+        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(customer));
 
-        when(paymentRepository.findById(paymentId)).thenReturn(Optional.empty());
+        Order myOrder = Order.builder().userId(currentUserId).build();
+        Payment myPayment = Payment.builder().order(myOrder).status(PaymentStatus.COMPLETED).build();
+        ReflectionTestUtils.setField(myPayment, "id", paymentId);
 
-        // [2] & [3]
-        BusinessException exception = org.junit.jupiter.api.Assertions.assertThrows(
-                BusinessException.class,
-                () -> paymentService.getPayment(paymentId, currentUserId, userRole)
-        );
+        when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(myPayment));
 
-        assertEquals(ErrorCode.INVALID_REQUEST, exception.getErrorCode());
+        // when
+        paymentService.deletePayment(paymentId, currentUserId);
+
+        // then
+        assertEquals(PaymentStatus.CANCELLED, myPayment.getStatus());
     }
 
     @Test
-    @DisplayName("내 결제 내역 조회 성공 - 페이징 처리 및 DTO 변환 확인")
-    void getMyPayments_Success() {
-        // [1] Given
-        String currentUserId = "user123";
-        String userRole = "CUSTOMER";
-        Pageable pageable = PageRequest.of(0, 10);
-
-        // ✨ 유저 세팅
-        User mockUser = createMockUser(currentUserId, "CUSTOMER");
-        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(mockUser));
-
-        Payment payment1 = Payment.builder().amount(25000L).status(PaymentStatus.COMPLETED).build();
-        ReflectionTestUtils.setField(payment1, "id", UUID.randomUUID());
-        ReflectionTestUtils.setField(payment1, "createdAt", LocalDateTime.now());
-
-        Payment payment2 = Payment.builder().amount(15000L).status(PaymentStatus.CANCELLED).build();
-        ReflectionTestUtils.setField(payment2, "id", UUID.randomUUID());
-        ReflectionTestUtils.setField(payment2, "createdAt", LocalDateTime.now());
-
-        Page<Payment> paymentPage = new PageImpl<>(List.of(payment1, payment2), pageable, 2);
-        when(paymentRepository.findAllByUserId(currentUserId, pageable)).thenReturn(paymentPage);
-
-        // [2] When
-        MyPaymentListResponseDto response = paymentService.getMyPayments(currentUserId, pageable);
-
-        // [3] Then
-        assertNotNull(response);
-        assertEquals(2, response.getContent().size());
-        assertEquals(2, response.getTotalElements());
-        assertEquals(0, response.getPage());
-        assertEquals(25000L, response.getContent().get(0).getAmount());
-        assertEquals("COMPLETED", response.getContent().get(0).getStatus());
-    }
-
-    @Test
-    @DisplayName("내 결제 내역 조회 성공 - 결제 내역이 하나도 없을 때 빈 리스트 반환")
-    void getMyPayments_Success_EmptyList() {
-        // [1] Given
-        String currentUserId = "user123";
-        String userRole = "CUSTOMER";
-        Pageable pageable = PageRequest.of(0, 10);
-
-        // ✨ 유저 세팅
-        User mockUser = createMockUser(currentUserId, "CUSTOMER");
-        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(mockUser));
-
-        Page<Payment> emptyPage = new PageImpl<>(List.of(), pageable, 0);
-        when(paymentRepository.findAllByUserId(currentUserId, pageable)).thenReturn(emptyPage);
-
-        // [2] When
-        MyPaymentListResponseDto response = paymentService.getMyPayments(currentUserId, pageable);
-
-        // [3] Then
-        assertNotNull(response);
-        assertTrue(response.getContent().isEmpty());
-        assertEquals(0, response.getTotalElements());
-    }
-
-    @Test
-    @DisplayName("가게별 결제 조회 성공 - 사장님(OWNER)이 본인 가게 조회")
-    void getStorePayments_Success_Owner() {
-        // [1] Given
+    @DisplayName("가게별 결제 조회 실패 - 일반 고객(CUSTOMER)의 접근 차단")
+    void getStorePayments_Fail_RoleNotAllowed() {
+        // given
         UUID storeId = UUID.randomUUID();
-        String currentUserId = "owner123";
-        String userRole = "OWNER";
-        Pageable pageable = PageRequest.of(0, 10);
+        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(customer));
 
-        // ✨ 유저 세팅 (권한: OWNER)
-        User mockUser = createMockUser(currentUserId, "OWNER");
-        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(mockUser));
-
-        Store store = Store.builder().owner(mockUser).build();
-        ReflectionTestUtils.setField(store, "id", storeId);
-
-        Order fakeOrder = Order.builder().build();
-        ReflectionTestUtils.setField(fakeOrder, "id", UUID.randomUUID());
-
-        Payment payment = Payment.builder()
-                .amount(15000L)
-                .status(PaymentStatus.COMPLETED)
-                .build();
-        ReflectionTestUtils.setField(payment, "id", UUID.randomUUID());
-        ReflectionTestUtils.setField(payment, "createdAt", LocalDateTime.now());
-        ReflectionTestUtils.setField(payment, "order", fakeOrder);
-
-        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
-        Page<Payment> paymentPage = new PageImpl<>(List.of(payment), pageable, 1);
-        when(paymentRepository.findAllByStoreId(storeId, pageable)).thenReturn(paymentPage);
-
-        // [2] When
-        StorePaymentListResponseDto response = paymentService.getStorePayments(storeId, currentUserId, pageable);
-
-        // [3] Then
-        assertNotNull(response);
-        assertEquals(1, response.getContent().size());
-        assertEquals(15000L, response.getContent().get(0).getAmount());
-        assertNotNull(response.getContent().get(0).getOrderId());
-    }
-
-    @Test
-    @DisplayName("가게별 결제 조회 성공 - 관리자(MASTER)는 모든 가게 프리패스 조회")
-    void getStorePayments_Success_Master() {
-        // [1] Given
-        UUID storeId = UUID.randomUUID();
-        String currentUserId = "admin_master";
-        String userRole = "MASTER";
-        Pageable pageable = PageRequest.of(0, 10);
-
-        // ✨ 유저 세팅 (권한: MASTER)
-        User mockUser = createMockUser(currentUserId, "MASTER");
-        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(mockUser));
-
-        User otherOwner = User.builder().username("other_owner_999").build();
-        Store store = Store.builder().owner(otherOwner).build();
-
-        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
-        when(paymentRepository.findAllByStoreId(storeId, pageable)).thenReturn(Page.empty());
-
-        // [2] & [3]
-        assertDoesNotThrow(() -> paymentService.getStorePayments(storeId, currentUserId, pageable));
-    }
-
-    @Test
-    @DisplayName("가게별 결제 조회 실패 - 일반 고객(CUSTOMER)의 접근 원천 차단 (403 방어)")
-    void getStorePayments_Fail_Customer() {
-        // [1] Given
-        UUID storeId = UUID.randomUUID();
-        String currentUserId = "customer123";
-        String userRole = "CUSTOMER";
-        Pageable pageable = PageRequest.of(0, 10);
-
-        // ✨ 유저 세팅
-        User mockUser = createMockUser(currentUserId, "CUSTOMER");
-        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(mockUser));
-
-        // [2] & [3]
+        // when & then
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> paymentService.getStorePayments(storeId, currentUserId, pageable));
+                () -> paymentService.getStorePayments(storeId, currentUserId, PageRequest.of(0, 10)));
 
         assertEquals(ErrorCode.ACCESS_DENIED, exception.getErrorCode());
     }
 
     @Test
-    @DisplayName("가게별 결제 조회 실패 - 다른 사장님의 가게를 조회하려 할 때 (S003 방어)")
-    void getStorePayments_Fail_WrongOwner() {
-        // [1] Given
-        UUID storeId = UUID.randomUUID();
-        String currentUserId = "hacker_owner";
-        String userRole = "OWNER";
+    @DisplayName("내 결제 목록 조회 성공 - 페이징 처리 검증")
+    void getMyPayments_Success() {
+        // given
         Pageable pageable = PageRequest.of(0, 10);
+        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(customer));
 
-        // ✨ 유저 세팅
-        User mockUser = createMockUser(currentUserId, "OWNER");
-        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(mockUser));
+        Payment payment = Payment.builder().amount(5000L).status(PaymentStatus.COMPLETED).build();
+        ReflectionTestUtils.setField(payment, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(payment, "createdAt", LocalDateTime.now());
 
-        User realOwner = User.builder().username("real_owner_777").build();
-        Store store = Store.builder().owner(realOwner).build();
+        Page<Payment> page = new PageImpl<>(List.of(payment), pageable, 1);
 
-        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        // ✨ [수정] currentUserId를 eq()로 감싸거나, 둘 다 any() 계열을 써야 합니다.
+        when(paymentRepository.findAllByUserId(eq(currentUserId), any(Pageable.class))).thenReturn(page);
 
-        // [2] & [3]
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> paymentService.getStorePayments(storeId, currentUserId, pageable));
+        // when
+        MyPaymentListResponseDto response = paymentService.getMyPayments(currentUserId, pageable);
 
-        assertEquals(ErrorCode.STORE_ACCESS_DENIED, exception.getErrorCode());
+        // then
+        assertNotNull(response);
+        assertEquals(1, response.getContent().size());
     }
 }

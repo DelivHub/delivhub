@@ -154,6 +154,8 @@ public enum ErrorCode {
 
     REVIEW_CONFLICT(HttpStatus.CONFLICT, "R011", "이미 해당 주문에 대한 리뷰가 존재합니다."), // 409
     REVIEW_BAD_REQUEST(HttpStatus.BAD_REQUEST, "R012", "배달이 완료(COMPLETED)된 주문만 리뷰를 작성할 수 있습니다."), // 400
+    INVALID_RATING_RANGE(HttpStatus.BAD_REQUEST, "R013", "별점은 1점에서 5점 사이여야 합니다."), // 400
+
 
     // 13. AI Log (AI 시스템 로직)
     AI_LOG_FORBIDDEN(HttpStatus.FORBIDDEN, "AI001", "AI 로그 접근은 관리자(MANAGER, MASTER)만 가능합니다."),
