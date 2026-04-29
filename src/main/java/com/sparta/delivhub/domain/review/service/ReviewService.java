@@ -215,16 +215,14 @@ public class ReviewService {
         // 1. DB에서 해당 가게의 평균 별점 계산
         Double average = reviewRepository.calculateAverageRatingByStoreId(store.getId());
 
-        // 💡 리뷰가 하나도 없어서 average가 null로 나올 경우 방어 로직 추가
         if (average == null) {
             average = 0.0;
         }
 
-        // 2. Double을 BigDecimal로 변환 (소수점 첫째 자리까지만 반올림)
         BigDecimal newAverageRating = BigDecimal.valueOf(average)
                 .setScale(1, RoundingMode.HALF_UP);
 
-        // 3. Store 엔티티 업데이트 (더티 체킹 발생)
+        // 2. Store 엔티티 업데이트 (더티 체킹 발생)
         store.updateAverageRating(newAverageRating);
     }
 
@@ -236,7 +234,6 @@ public class ReviewService {
     public StoreReviewPageResponseDto getReviewsByStore(UUID storeId, Pageable pageable) {
 
         // 1. 가게 존재 여부 확인 및 정보(평균 평점) 가져오기
-        // (명세서 우측의 STORE_NOT_FOUND 404 에러 방어)
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORE_NOT_FOUND));
 
