@@ -160,7 +160,9 @@ public enum ErrorCode {
     AI_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "AI002", "존재하지 않는 AI 로그입니다."),
     AI_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI003", "AI 응답을 받지 못했습니다."),
     AI_PROMPT_REQUIRED(HttpStatus.BAD_REQUEST, "AI004", "AI 설명 생성을 위해 프롬프트를 입력해야 합니다."),
-    AI_PROMPT_TOO_LONG(HttpStatus.BAD_REQUEST, "AI005", "AI 프롬프트는 100자 이하여야 합니다.");
+    AI_PROMPT_TOO_LONG(HttpStatus.BAD_REQUEST, "AI005", "AI 프롬프트는 100자 이하여야 합니다."),
+    AI_IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "AI006", "이미지 파일을 업로드해야 합니다."),
+    AI_IMAGE_INVALID(HttpStatus.BAD_REQUEST, "AI007", "지원하지 않는 이미지 형식입니다. (jpg, png, webp만 가능)");
 
     private final HttpStatus httpStatus;
     private final String code;

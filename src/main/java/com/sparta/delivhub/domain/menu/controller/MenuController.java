@@ -14,9 +14,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -88,5 +90,16 @@ public class MenuController {
     ) {
         menuService.deleteMenu(menuId, userDetails.getUsername());
         return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    // 이미지 기반 AI 메뉴 설명 생성
+    @PostMapping(value = "/menus/{menuId}/ai-description", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<ResponseMenuDto>> generateAiDescriptionFromImage(
+            @PathVariable UUID menuId,
+            @RequestPart("image") MultipartFile image,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        ResponseMenuDto response = menuService.generateDescriptionFromImage(menuId, image, userDetails.getUsername());
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
