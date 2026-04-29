@@ -1,6 +1,6 @@
-package com.sparta.delivhub.domain.order.service.dto;
+package com.sparta.delivhub.domain.order.dto;
 
-import com.sparta.delivhub.domain.order.service.entity.OrderType;
+import com.sparta.delivhub.domain.order.entity.OrderType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;

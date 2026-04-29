@@ -1,6 +1,6 @@
-package com.sparta.delivhub.domain.order.service.repository;
+package com.sparta.delivhub.domain.order.repository;
 
-import com.sparta.delivhub.domain.order.service.entity.Order;
+import com.sparta.delivhub.domain.order.entity.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

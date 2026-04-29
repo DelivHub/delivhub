@@ -1,4 +1,4 @@
-package com.sparta.delivhub.domain.order.service.entity;
+package com.sparta.delivhub.domain.order.entity;
 
 import com.sparta.delivhub.common.entity.BaseEntity;
 import jakarta.persistence.*;

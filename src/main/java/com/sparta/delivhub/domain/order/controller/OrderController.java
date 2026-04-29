@@ -1,10 +1,10 @@
-package com.sparta.delivhub.domain.order.service.controller;
+package com.sparta.delivhub.domain.order.controller;
 
 import com.sparta.delivhub.common.dto.ApiResponse;
-import com.sparta.delivhub.domain.order.service.dto.OrderRequestDto;
-import com.sparta.delivhub.domain.order.service.dto.OrderResponseDto;
-import com.sparta.delivhub.domain.order.service.entity.OrderStatus;
-import com.sparta.delivhub.domain.order.service.service.OrderService;
+import com.sparta.delivhub.domain.order.dto.OrderRequestDto;
+import com.sparta.delivhub.domain.order.dto.OrderResponseDto;
+import com.sparta.delivhub.domain.order.entity.OrderStatus;
+import com.sparta.delivhub.domain.order.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

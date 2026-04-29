@@ -1,4 +1,4 @@
-package com.sparta.delivhub.domain.order.service.exception;
+package com.sparta.delivhub.domain.order.exception;
 
 import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
