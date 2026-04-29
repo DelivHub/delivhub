@@ -134,7 +134,7 @@
 | POST | /api/v1/auth/signup | 회원가입 | 전체     |
 | POST | /api/v1/auth/login | 로그인 | 전체     |
 | GET | /api/v1/users/{username} | 회원 조회 | 본인/관리자 |
-| PUT | /api/v1/users/{username} | 회원 수정 | 본인     |
+| PUT | /api/v1/users/{username} | 회원 수정 | 본인/관리자 |
 | DELETE | /api/v1/users/{username} | 회원 탈퇴 | 본인/관리자 |
 
 </details>
