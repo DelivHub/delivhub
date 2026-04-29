@@ -177,7 +177,7 @@ class StoreServiceTest {
 
         // then
         assertThat(store.getName()).isEqualTo("수정된 가게");
-        assertThat(response.getName()).isEqualTo(storeId);
+        assertThat(response.getName()).isEqualTo("수정된 가게");
     }
 
     @Test
