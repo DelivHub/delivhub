@@ -15,6 +15,7 @@ import com.sparta.delivhub.domain.payment.repository.PaymentRepository;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.store.repository.StoreRepository;
 import com.sparta.delivhub.domain.user.entity.User;
+import com.sparta.delivhub.domain.user.entity.UserRole;
 import com.sparta.delivhub.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -36,45 +37,47 @@ public class PaymentService {
 
     @Transactional
     public ResponsePaymentDTO createPayment(RequestPaymentDTO request, String currentUserId) {
-        // [보안 강화] DB 실시간 조회: 유저가 존재하는지, 권한이 강등/삭제되지는 않았는지 재검증
+        // [안전장치] 입력값 null 체크
+        if (request == null || request.getOrderId() == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_DATA);
+        }
+
+        // 1. 유저 조회 및 권한 재검증
         User currentUser = userRepository.findByUsername(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        if (!"CUSTOMER".equals(currentUser.getUserRole().name())) {
+        // Enum 직접 비교로 안전하게 권한 체크
+        if (UserRole.CUSTOMER != currentUser.getUserRole()) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
-        // 1. 주문 엔티티 조회
+        // 2. 주문 엔티티 조회
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
 
-
-        // 2. 권한 검증 (이 주문을 한 사람이 현재 로그인한 유저가 맞는지)
-        if (!order.getUserId().equals(currentUserId)) {
+        // 소유자 권한 검증
+        if (!currentUserId.equals(order.getUserId())) {
             throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
         }
 
-        // 3. 중복 결제 방어 (이미 해당 주문에 대한 결제가 있는지 확인)
+        // 3. 중복 결제 방어
         if (paymentRepository.existsByOrderId(order.getId())) {
             throw new BusinessException(ErrorCode.PAYMENT_ALREADY_EXISTS);
         }
 
-        // 4. 결제 수단(Enum) 변환 및 검증
-        PaymentMethod method;
-        try {
-            // "CARD" -> PaymentMethod.CARD 로 변환
-            method = PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            // Enum에 없는 값이면 예외 발생
+        // 4. 결제 수단 검증 (CARD만 허용)
+        if (request.getPaymentMethod() == null || !request.getPaymentMethod().trim().equalsIgnoreCase("CARD")) {
             throw new BusinessException(ErrorCode.INVALID_PAYMENT_METHOD);
         }
+        // 오직 CARD만 허용하므로 직접 할당
+        PaymentMethod method = PaymentMethod.CARD;
 
-        // 5. 결제 엔티티 생성
-
-        //결제 금액이 실제 주문 금액과 맞는지 확인
-        if (!order.getTotalPrice().equals(request.getAmount().longValue())) {
+        // 5. 결제 금액 검증
+        if (request.getAmount() == null || !order.getTotalPrice().equals(request.getAmount())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_DATA);
         }
+
+        // 6. 결제 엔티티 생성 및 저장
         Payment payment = new Payment(
                 order,
                 request.getAmount(),
@@ -82,13 +85,10 @@ public class PaymentService {
                 PaymentStatus.COMPLETED
         );
 
-        // 6. 저장
         Payment savedPayment = paymentRepository.save(payment);
 
-        // 7. DTO로 변환
         return new ResponsePaymentDTO(savedPayment);
     }
-
     @Transactional(readOnly = true)
     public ResponsePaymentDTO getPayment(UUID paymentId, String currentUserId, String userRole) {
         // 1. 결제 내역 조회
@@ -103,9 +103,10 @@ public class PaymentService {
         // 2. 권한 검증
         // CUSTOMER(일반 고객)인 경우, 반드시 자신의 결제 내역만 조회할 수 있어야 합니다.
         // MANAGER나 MASTER는 모든 결제 내역을 조회할 수 있도록 예외를 둡니다.
-        if ("CUSTOMER".equals(dbRole)) {
-            String ownerId = payment.getOrder().getUserId();
-            if (!ownerId.equals(currentUserId)) {
+        // [안전장치] DB Role 직접 비교 (Enum 활용)
+        if (UserRole.CUSTOMER == currentUser.getUserRole()) {
+            // [안전장치] currentUserId를 앞에 두어 NPE 방어
+            if (!currentUserId.equals(payment.getOrder().getUserId())) {
                 throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
             }
         }
@@ -154,28 +155,28 @@ public class PaymentService {
 
     @Transactional
     public void deletePayment(UUID paymentId, String currentUserId) {
-        // [보안 강화] 유저가 유효한지 확인 (탈퇴한 유저의 악의적 접근 방어)
+        // [안전장치] 파라미터 null 체크
+        if (paymentId == null || currentUserId == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_DATA);
+        }
+
         userRepository.findByUsername(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // 1. 결제 내역 조회
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
 
-        // 2. 타인의 결제 건인지 확인 (주문한 유저 ID와 현재 로그인한 유저 ID 비교)
-        String ownerId = payment.getOrder().getUserId();
-        if (!ownerId.equals(currentUserId)) {
+        // [안전장치] 소유자 확인 (currentUserId를 앞쪽으로)
+        if (!currentUserId.equals(payment.getOrder().getUserId())) {
             throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
         }
 
-        // 3. 이미 삭제되었는지 확인 (BaseEntity의 isDeleted() 메서드 활용)
-        if (payment.isDeleted()) {
+        // [안전장치] 이미 취소된 결제는 다시 취소할 수 없음
+        if (payment.getStatus() == PaymentStatus.CANCELLED || payment.isDeleted()) {
             throw new BusinessException(ErrorCode.PAYMENT_ALREADY_CANCELLED);
         }
 
-        // 4. 안전하게 삭제 처리 (우리가 엔티티에 만든 메서드 호출)
-        // repository.delete(payment); (X)
-        payment.cancelPayment(currentUserId); // 상태를 DELETED로 바꾸고 deletedAt, deletedBy 기록
+        payment.cancelPayment(currentUserId);
     }
 
     /**
@@ -199,35 +200,29 @@ public class PaymentService {
      */
     @Transactional(readOnly = true)
     public StorePaymentListResponseDto getStorePayments(UUID storeId, String currentUserId, Pageable pageable) {
-
-        // 보안 강화] DB에서 최신 Role 확인
         User currentUser = userRepository.findByUsername(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        String dbRole = currentUser.getUserRole().name();
 
-        // 1. 일반 고객(CUSTOMER)은 이 API에 절대 접근할 수 없습니다.
-        if ("CUSTOMER".equals(dbRole)) {
+        UserRole dbRole = currentUser.getUserRole();
+
+        if (UserRole.CUSTOMER == dbRole) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
-        // 2. 가게 존재 여부 확인
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORE_NOT_FOUND));
 
-        // 3. OWNER(사장님)일 경우, '본인 가게'가 맞는지 확인
-        if ("OWNER".equals(dbRole)) {
-            if (!store.getOwner().getUsername().equals(currentUserId)) {
-                // 내 가게가 아니라면 명세서의 STORE_ACCESS_DENIED 에러 발생
+        // [안전장치] OWNER 권한일 때 본인 가게인지 확인
+        if (UserRole.OWNER == dbRole) {
+            // [안전장치] store.getOwner()가 null일 경우를 대비한 체이닝 방어
+            if (store.getOwner() == null || !currentUserId.equals(store.getOwner().getUsername())) {
                 throw new BusinessException(ErrorCode.STORE_ACCESS_DENIED);
             }
         }
-        // MANAGER나 MASTER는 위 검증을 건너뛰고 모든 가게의 결제 내역을 볼 수 있습니다.
 
-        // 4. 권한 검증을 통과했다면, 가게 ID로 결제 내역 페이징 조회
         Pageable validatedPageable = validatePageable(pageable);
         Page<Payment> paymentPage = paymentRepository.findAllByStoreId(storeId, validatedPageable);
 
-        // 5. DTO로 변환하여 반환
         return new StorePaymentListResponseDto(paymentPage);
     }
 

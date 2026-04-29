@@ -43,6 +43,10 @@ public class ReviewService {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
+        if (request.getRating() < 1 || request.getRating() > 5) {
+            throw new BusinessException(ErrorCode.INVALID_RATING_RANGE);
+        }
+
         // 2. 주문 내역 조회 및 소유자 확인
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
