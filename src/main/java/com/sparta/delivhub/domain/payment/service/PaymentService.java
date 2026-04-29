@@ -37,55 +37,47 @@ public class PaymentService {
 
     @Transactional
     public ResponsePaymentDTO createPayment(RequestPaymentDTO request, String currentUserId) {
-        // [보안 강화] DB 실시간 조회: 유저가 존재하는지, 권한이 강등/삭제되지는 않았는지 재검증
+        // [안전장치] 입력값 null 체크
+        if (request == null || request.getOrderId() == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_DATA);
+        }
+
+        // 1. 유저 조회 및 권한 재검증
         User currentUser = userRepository.findByUsername(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        if (!"CUSTOMER".equals(currentUser.getUserRole().name())) {
-            throw new BusinessException(ErrorCode.ACCESS_DENIED);
-        }
-
-        // 1. 주문 엔티티 조회
-        Order order = orderRepository.findById(request.getOrderId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
-
-        if (!currentUserId.equals(order.getUserId())) {
-            throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
-        }
-
-        if (paymentRepository.existsByOrderId(order.getId())) {
-            throw new BusinessException(ErrorCode.PAYMENT_ALREADY_EXISTS);
-        }
-
-        // 2. 권한 검증 (이 주문을 한 사람이 현재 로그인한 유저가 맞는지)
+        // Enum 직접 비교로 안전하게 권한 체크
         if (UserRole.CUSTOMER != currentUser.getUserRole()) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
-        // 3. 중복 결제 방어 (이미 해당 주문에 대한 결제가 있는지 확인)
+        // 2. 주문 엔티티 조회
+        Order order = orderRepository.findById(request.getOrderId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+
+        // 소유자 권한 검증
+        if (!currentUserId.equals(order.getUserId())) {
+            throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
+        }
+
+        // 3. 중복 결제 방어
         if (paymentRepository.existsByOrderId(order.getId())) {
             throw new BusinessException(ErrorCode.PAYMENT_ALREADY_EXISTS);
         }
 
-        // 4. 결제 수단(Enum) 변환 및 검증 (CARD만 허용)
-        PaymentMethod method;
-        try {
-            method = PaymentMethod.valueOf(request.getPaymentMethod().trim().toUpperCase());
-
-            // CARD가 아닌 결제 수단은 거부
-            if (request.getPaymentMethod() == null || method != PaymentMethod.CARD) {
-                throw new BusinessException(ErrorCode.INVALID_PAYMENT_METHOD);
-            }
-        } catch (IllegalArgumentException e) {
+        // 4. 결제 수단 검증 (CARD만 허용)
+        if (request.getPaymentMethod() == null || !request.getPaymentMethod().trim().equalsIgnoreCase("CARD")) {
             throw new BusinessException(ErrorCode.INVALID_PAYMENT_METHOD);
         }
+        // 오직 CARD만 허용하므로 직접 할당
+        PaymentMethod method = PaymentMethod.CARD;
 
-        // 5. 결제 엔티티 생성
-
-        //결제 금액이 실제 주문 금액과 맞는지 확인
-        if (!order.getTotalPrice().equals(request.getAmount())) {
+        // 5. 결제 금액 검증
+        if (request.getAmount() == null || !order.getTotalPrice().equals(request.getAmount())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_DATA);
         }
+
+        // 6. 결제 엔티티 생성 및 저장
         Payment payment = new Payment(
                 order,
                 request.getAmount(),
@@ -93,13 +85,10 @@ public class PaymentService {
                 PaymentStatus.COMPLETED
         );
 
-        // 6. 저장
         Payment savedPayment = paymentRepository.save(payment);
 
-        // 7. DTO로 변환
         return new ResponsePaymentDTO(savedPayment);
     }
-
     @Transactional(readOnly = true)
     public ResponsePaymentDTO getPayment(UUID paymentId, String currentUserId, String userRole) {
         // 1. 결제 내역 조회
