@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 @Getter
 public class StoreReviewListResponseDto {
-    private List<StoreReviewDto> content; // 명세서 규격에 맞춘 리스트 이름
+    private List<StoreReviewDto> content;
 
     private int page;
     private int size;

@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Getter
 @Builder
-@AllArgsConstructor // For Test
+@AllArgsConstructor
 public class MyReviewDto {
     private UUID reviewId;
     private String storeName;
@@ -21,7 +21,6 @@ public class MyReviewDto {
     // 엔티티를 DTO로 변환
     public MyReviewDto(Review review) {
         this.reviewId = review.getId();
-        // Store 엔티티에 가게 이름(name) 필드가 있다고 가정합니다. (없다면 맞춰서 수정해주세요)
         this.storeName = review.getStore().getName();
         this.rating = review.getRating();
         this.content = review.getContent();

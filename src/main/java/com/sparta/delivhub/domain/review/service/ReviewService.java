@@ -90,7 +90,7 @@ public class ReviewService {
     /**
      * 내 리뷰 목록 조회 (페이징)
      */
-    @Transactional(readOnly = true) // 단순 조회용이므로 성능 최적화를 위해 readOnly 적용
+    @Transactional(readOnly = true)
     public MyReviewListResponseDto getMyReviews(String currentUserId, String userRole, Pageable pageable) {
 
         // 1. 권한 검사 (CUSTOMER 만 조회 가능)
