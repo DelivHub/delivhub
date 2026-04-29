@@ -12,6 +12,7 @@ public class ResponsePaymentDTO {
     private UUID paymentId;
     private UUID orderId;
     private Long amount;
+    private String paymentMethod;
     private String status;
     private LocalDateTime createdAt;
 
@@ -20,6 +21,7 @@ public class ResponsePaymentDTO {
         this.paymentId = payment.getId();
         this.orderId = payment.getOrder().getId();
         this.amount = payment.getAmount();               // 금액 추가
+        this.paymentMethod = payment.getPaymentMethod().name();
         this.status = payment.getStatus().name();        // Enum을 String으로 변환
         this.createdAt = payment.getCreatedAt();         // 생성 시간 추가
     }
