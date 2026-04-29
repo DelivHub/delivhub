@@ -53,7 +53,7 @@ public class Store extends BaseEntity {
 
     @Builder.Default
     @Column(name = "is_hidden", nullable = false)
-    private Boolean isHidden = true;
+    private Boolean isHidden = false;
 
     @Builder.Default
     @Column(name = "average_rating", nullable = false, precision = 2, scale = 1)

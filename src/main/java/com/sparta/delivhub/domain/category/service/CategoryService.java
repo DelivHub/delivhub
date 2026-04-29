@@ -68,7 +68,7 @@ public class CategoryService {
 
         category.updateCategory(
                 categoryRequestDto.getName(),
-                categoryRequestDto.getIsActive()
+                categoryRequestDto.getIsHidden()
         );
 
         return CategoryIdResponseDto.builder()

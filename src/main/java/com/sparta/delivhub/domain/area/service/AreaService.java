@@ -83,7 +83,7 @@ public class AreaService {
                 areaRequestDto.getName(),
                 areaRequestDto.getCity(),
                 areaRequestDto.getDistrict(),
-                areaRequestDto.getIsActive()
+                areaRequestDto.getIsHidden()
         );
 
         return AreaIdResponseDto.builder()
