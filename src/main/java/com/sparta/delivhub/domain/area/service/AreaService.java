@@ -5,7 +5,7 @@ import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.common.util.AuthorizationUtils;
 import com.sparta.delivhub.domain.area.dto.requset.AreaRequestDto;
 import com.sparta.delivhub.domain.area.dto.response.AreaCityResponseDto;
-import com.sparta.delivhub.domain.area.dto.response.AreaIdResponseDto;
+import com.sparta.delivhub.domain.area.dto.response.AreaNameResponseDto;
 import com.sparta.delivhub.domain.area.dto.response.AreaResponseDto;
 import com.sparta.delivhub.domain.area.entity.Area;
 import com.sparta.delivhub.domain.area.repository.AreaRepository;
@@ -16,7 +16,6 @@ import com.sparta.delivhub.domain.category.entity.Category;
 import com.sparta.delivhub.domain.category.repository.CategoryRepository;
 import com.sparta.delivhub.domain.store.dto.requset.StoreRequestDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreDetailResponseDto;
-import com.sparta.delivhub.domain.store.dto.response.StoreIdResponseDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreListResponseDto;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.store.repository.StoreRepository;
@@ -38,7 +37,7 @@ public class AreaService {
     private final UserRepository userRepository;
 
     @Transactional
-    public AreaIdResponseDto createArea(AreaRequestDto areaRequestDto, String userId) {
+    public AreaResponseDto createArea(AreaRequestDto areaRequestDto, String userId) {
         User user = userRepository.findByUsernameAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -52,8 +51,10 @@ public class AreaService {
 
         Area save = areaRepository.save(area);
 
-        return AreaIdResponseDto.builder()
-                .areaId(save.getId())
+        return AreaResponseDto.builder()
+                .city(save.getCity())
+                .district(save.getDistrict())
+                .name(save.getName())
                 .build();
     }
 
@@ -70,7 +71,7 @@ public class AreaService {
     }
 
     @Transactional
-    public AreaIdResponseDto updateArea(UUID id, AreaRequestDto areaRequestDto, String userId) {
+    public AreaNameResponseDto updateArea(UUID id, AreaRequestDto areaRequestDto, String userId) {
         User user = userRepository.findByUsernameAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -86,13 +87,13 @@ public class AreaService {
                 areaRequestDto.getIsHidden()
         );
 
-        return AreaIdResponseDto.builder()
-                .areaId(area.getId())
+        return AreaNameResponseDto.builder()
+                .name(area.getName())
                 .build();
     }
 
     @Transactional
-    public AreaIdResponseDto deleteArea(UUID id, String userId) {
+    public AreaNameResponseDto deleteArea(UUID id, String userId) {
 
         User user = userRepository.findByUsernameAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -104,8 +105,8 @@ public class AreaService {
 
         area.softDelete(userId);
 
-        return AreaIdResponseDto.builder()
-                .areaId(area.getId())
+        return AreaNameResponseDto.builder()
+                .name(area.getName())
                 .build();
     }
 

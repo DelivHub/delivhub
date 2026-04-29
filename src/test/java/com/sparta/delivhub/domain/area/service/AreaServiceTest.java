@@ -4,7 +4,6 @@ import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.domain.area.dto.requset.AreaRequestDto;
 import com.sparta.delivhub.domain.area.dto.response.AreaCityResponseDto;
-import com.sparta.delivhub.domain.area.dto.response.AreaIdResponseDto;
 import com.sparta.delivhub.domain.area.dto.response.AreaResponseDto;
 import com.sparta.delivhub.domain.area.entity.Area;
 import com.sparta.delivhub.domain.area.repository.AreaRepository;
@@ -57,10 +56,12 @@ class AreaServiceTest {
         given(areaRepository.save(any(Area.class))).willReturn(savedArea);
 
         // when
-        AreaIdResponseDto response = areaService.createArea(request, userId);
+        AreaResponseDto response = areaService.createArea(request, userId);
 
         // then
-        assertThat(response.getAreaId()).isEqualTo(savedArea.getId());
+        assertThat(response.getCity()).isEqualTo(savedArea.getCity());
+        assertThat(response.getDistrict()).isEqualTo(savedArea.getDistrict());
+        assertThat(response.getName()).isEqualTo(savedArea.getName());
         verify(areaRepository).save(any(Area.class));
     }
 

@@ -10,8 +10,8 @@ import com.sparta.delivhub.domain.category.repository.CategoryRepository;
 import com.sparta.delivhub.domain.review.repository.ReviewRepository;
 import com.sparta.delivhub.domain.store.dto.requset.StoreRequestDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreDetailResponseDto;
-import com.sparta.delivhub.domain.store.dto.response.StoreIdResponseDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreListResponseDto;
+import com.sparta.delivhub.domain.store.dto.response.StoreNameResponseDto;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.store.repository.StoreRepository;
 import com.sparta.delivhub.domain.user.entity.User;
@@ -37,7 +37,7 @@ public class StoreService {
     private final ReviewRepository reviewRepository;
 
     @Transactional
-    public StoreIdResponseDto createStore(StoreRequestDto storeRequestDto, String userId) {
+    public StoreDetailResponseDto createStore(StoreRequestDto storeRequestDto, String userId) {
         User user = userRepository.findByUsernameAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -64,8 +64,12 @@ public class StoreService {
         Store save = storeRepository.save(store);
 
 
-        return StoreIdResponseDto.builder()
+        return StoreDetailResponseDto.builder()
                 .storeId(save.getId())
+                .name(save.getName())
+                .address(save.getAddress())
+                .number(save.getNumber())
+                .average_rating(save.getAverageRating())
                 .build();
     }
 
@@ -81,7 +85,7 @@ public class StoreService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORE_NOT_FOUND));
     }
     @Transactional
-    public StoreIdResponseDto updateStore(UUID id, StoreRequestDto storeRequestDto, String userId) {
+    public StoreNameResponseDto updateStore(UUID id, StoreRequestDto storeRequestDto, String userId) {
         Store store = storeRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORE_NOT_FOUND));
         Category category = categoryRepository.findById(storeRequestDto.getCategoryId())
@@ -103,13 +107,13 @@ public class StoreService {
                 storeRequestDto.getNumber()
         );
 
-        return StoreIdResponseDto.builder()
-                .storeId(store.getId())
+        return StoreNameResponseDto.builder()
+                .name(store.getName())
                 .build();
     }
 
     @Transactional
-    public StoreIdResponseDto deleteStore(UUID id, String userId) {
+    public StoreNameResponseDto deleteStore(UUID id, String userId) {
         Store store = storeRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORE_NOT_FOUND));
         User user = userRepository.findByUsernameAndDeletedAtIsNull(userId)
@@ -119,8 +123,8 @@ public class StoreService {
 
         store.softDelete(userId);
 
-        return StoreIdResponseDto.builder()
-                .storeId(store.getId())
+        return StoreNameResponseDto.builder()
+                .name(store.getName())
                 .build();
     }
 

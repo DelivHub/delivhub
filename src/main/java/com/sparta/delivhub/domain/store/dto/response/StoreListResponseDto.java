@@ -13,11 +13,11 @@ import java.util.UUID;
 public class StoreListResponseDto {
     private UUID storeId;
     private String name;
-    private BigDecimal average_rating;
+    private BigDecimal averageRating;
 
     public StoreListResponseDto(Store store) {
         this.storeId = store.getId();
         this.name = store.getName();
-        this.average_rating = store.getAverageRating();
+        this.averageRating = store.getAverageRating();
     }
 }
