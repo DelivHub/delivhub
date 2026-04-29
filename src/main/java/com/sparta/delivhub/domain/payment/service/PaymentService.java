@@ -59,20 +59,23 @@ public class PaymentService {
             throw new BusinessException(ErrorCode.PAYMENT_ALREADY_EXISTS);
         }
 
-        // 4. 결제 수단(Enum) 변환 및 검증
+        // 4. 결제 수단(Enum) 변환 및 검증 (CARD만 허용)
         PaymentMethod method;
         try {
-            // "CARD" -> PaymentMethod.CARD 로 변환
             method = PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase());
+
+            // [중요] CARD가 아닌 결제 수단은 거부
+            if (method != PaymentMethod.CARD) {
+                throw new BusinessException(ErrorCode.INVALID_PAYMENT_METHOD);
+            }
         } catch (IllegalArgumentException e) {
-            // Enum에 없는 값이면 예외 발생
             throw new BusinessException(ErrorCode.INVALID_PAYMENT_METHOD);
         }
 
         // 5. 결제 엔티티 생성
 
         //결제 금액이 실제 주문 금액과 맞는지 확인
-        if (!order.getTotalPrice().equals(request.getAmount().longValue())) {
+        if (!order.getTotalPrice().equals(request.getAmount())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_DATA);
         }
         Payment payment = new Payment(
