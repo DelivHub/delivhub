@@ -127,6 +127,7 @@ public class AiService {
                 .responseText(result)
                 .requestType("IMAGE_DESCRIPTION")
                 .createdAt(LocalDateTime.now())
+                .createdBy(userId)
                 .build());
 
         return result;

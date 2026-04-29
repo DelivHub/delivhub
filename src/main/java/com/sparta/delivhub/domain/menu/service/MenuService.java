@@ -187,7 +187,8 @@ public class MenuService {
 
     // 이미지 기반 AI 메뉴 설명
     @Transactional
-    public ResponseMenuDto generateDescriptionFromImage(UUID menuId, MultipartFile image, String username) {
+    public ResponseMenuDto generateDescriptionFromImage(
+            UUID menuId, MultipartFile image, String username) {
         Menu menu = getMenuAndCheckPermission(menuId, username, ErrorCode.MENU_NOT_FOUND_ON_UPDATE);
 
         if (image == null || image.isEmpty()) {

@@ -93,13 +93,15 @@ public class MenuController {
     }
 
     // 이미지 기반 AI 메뉴 설명 생성
-    @PostMapping(value = "/menus/{menuId}/ai-description", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/menus/{menuId}/ai-description",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ResponseMenuDto>> generateAiDescriptionFromImage(
             @PathVariable UUID menuId,
             @RequestPart("image") MultipartFile image,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        ResponseMenuDto response = menuService.generateDescriptionFromImage(menuId, image, userDetails.getUsername());
+        ResponseMenuDto response = menuService.generateDescriptionFromImage(
+                menuId, image, userDetails.getUsername());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
