@@ -2,7 +2,7 @@
 
 > 배달 주문 관리 플랫폼
 
-- API 서버 : http://16.176.103.233
+- API 서버 : http://16.176.103.233:8080
 
 <br>
 
@@ -122,7 +122,7 @@
 
 ## 📄 API 문서
 
-- Swagger UI: http://16.176.103.233/swagger-ui/index.html
+- Swagger UI: http://16.176.103.233:8080/swagger-ui/index.html
 
 ### 주요 API 목록
 
