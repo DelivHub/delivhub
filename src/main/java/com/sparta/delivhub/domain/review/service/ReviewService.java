@@ -2,9 +2,9 @@ package com.sparta.delivhub.domain.review.service;
 
 import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
-import com.sparta.delivhub.domain.order.service.entity.Order;
-import com.sparta.delivhub.domain.order.service.entity.OrderStatus;
-import com.sparta.delivhub.domain.order.service.repository.OrderRepository;
+import com.sparta.delivhub.domain.order.entity.Order;
+import com.sparta.delivhub.domain.order.entity.OrderStatus;
+import com.sparta.delivhub.domain.order.repository.OrderRepository;
 import com.sparta.delivhub.domain.review.dto.*;
 import com.sparta.delivhub.domain.review.entity.Review;
 import com.sparta.delivhub.domain.review.repository.ReviewRepository;

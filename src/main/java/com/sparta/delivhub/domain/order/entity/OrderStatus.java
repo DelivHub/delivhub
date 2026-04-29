@@ -1,4 +1,4 @@
-package com.sparta.delivhub.domain.order.service.entity;
+package com.sparta.delivhub.domain.order.entity;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
