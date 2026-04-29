@@ -40,11 +40,12 @@ public class AiLog {
     private String createdBy;
 
     @Builder
-    public AiLog(String userId, String requestText, String responseText, String requestType, LocalDateTime createdAt) {
+    public AiLog(String userId, String requestText, String responseText, String requestType, LocalDateTime createdAt, String createdBy) {
         this.userId = userId;
         this.requestText = requestText;
         this.responseText = responseText;
         this.requestType = requestType;
         this.createdAt = createdAt;
+        this.createdBy = createdBy;
     }
 }
