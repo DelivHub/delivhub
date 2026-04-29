@@ -31,7 +31,9 @@ public class AiService {
 
     private static final String GEMINI_URL =
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-    private static final String SUFFIX_PROMPT =  " 배달음식 플랫폼의 메뉴 소개글처럼 작성하고, 고객이 바로 이해할 수 있게 자연스럽고 간결한 한 줄로 50자 이하로 답변해줘. 마크다운 문법, 글자 수 표기 없이 순수 텍스트로만 답변해줘.";
+    private static final String SUFFIX_PROMPT = " 배달음식 플랫폼의 메뉴 소개글처럼 작성하고, "
+            + "고객이 바로 이해할 수 있게 자연스럽고 간결한 한 줄로 50자 이하로 답변해줘. "
+            + "마크다운 문법, 글자 수 표기 없이 순수 텍스트로만 답변해줘.";
 
     public String generateDescription(String userId, String prompt) {
         if (prompt.length() > 100) {
