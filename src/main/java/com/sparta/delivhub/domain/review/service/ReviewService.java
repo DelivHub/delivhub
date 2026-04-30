@@ -39,7 +39,8 @@ public class ReviewService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // 1. 권한 검사 (명세서 Auth: CUSTOMER)
-        if (!"CUSTOMER".equals(userRole)) {
+        String cleanedRole = userRole.replace("ROLE_", "");
+        if (!"CUSTOMER".equals(cleanedRole)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
@@ -97,7 +98,9 @@ public class ReviewService {
         User user = userRepository.findByUsername(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        if (!"CUSTOMER".equals(user.getUserRole().name())) {
+        // ROLE_ 접두사 제거 후 비교
+        String cleanedRole = user.getUserRole().name().replace("ROLE_", "");
+        if (!"CUSTOMER".equals(cleanedRole)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
@@ -133,7 +136,9 @@ public class ReviewService {
         User user = userRepository.findByUsername(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        if (!"CUSTOMER".equals(user.getUserRole().name())) {
+        // ROLE_ 접두사 제거 후 비교
+        String cleanedRole = user.getUserRole().name().replace("ROLE_", "");
+        if (!"CUSTOMER".equals(cleanedRole)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
@@ -166,7 +171,8 @@ public class ReviewService {
         // 1. 리뷰 조회
         User user = userRepository.findByUsername(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        String dbRole = user.getUserRole().name();
+        // DB에서 가져온 역할을 "CUSTOMER", "OWNER" 등으로 통일
+        String dbRole = user.getUserRole().name().replace("ROLE_", "");
 
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
