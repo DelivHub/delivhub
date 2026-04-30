@@ -25,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -89,15 +90,56 @@ class MenuServiceTest {
     void createMenu() {
         // given
         CreateMenuDto request = new CreateMenuDto();
+        ReflectionTestUtils.setField(request, "name", "김치찌개");
+        ReflectionTestUtils.setField(request, "price", 9000);
+        
         when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
         when(menuRepository.save(any(Menu.class))).thenReturn(menu);
 
         // when
-        ResponseMenuDto response = menuService.createMenu(storeId, request, null);
+        ResponseMenuDto response = menuService.createMenu(storeId, request, "admin");
 
         // then
         assertThat(response).isNotNull();
         verify(menuRepository, times(1)).save(any(Menu.class));
+    }
+
+    @Test
+    @DisplayName("메뉴 등록 성공 - AI 설명 자동 생성")
+    void createMenu_WithAiDescription() {
+        // given
+        CreateMenuDto request = new CreateMenuDto();
+        ReflectionTestUtils.setField(request, "name", "제육볶음");
+        ReflectionTestUtils.setField(request, "price", 10000);
+        ReflectionTestUtils.setField(request, "aiDescription", true);
+        ReflectionTestUtils.setField(request, "aiPrompt", "매콤한 제육볶음 설명해줘");
+
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        when(aiService.generateDescription(anyString(), anyString())).thenReturn("AI가 생성한 설명");
+        when(menuRepository.save(any(Menu.class))).thenReturn(menu);
+
+        // when
+        menuService.createMenu(storeId, request, "owner1");
+
+        // then
+        verify(aiService, times(1)).generateDescription(anyString(), eq("매콤한 제육볶음 설명해줘"));
+    }
+
+    @Test
+    @DisplayName("메뉴 등록 실패 - 권한 없는 유저")
+    void createMenu_Fail_Unauthorized() {
+        // given
+        CreateMenuDto request = new CreateMenuDto();
+        User hacker = mock(User.class);
+        lenient().when(hacker.getUsername()).thenReturn("hacker");
+        lenient().when(hacker.getUserRole()).thenReturn(UserRole.CUSTOMER);
+        
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        when(userRepository.findByUsernameAndDeletedAtIsNull("hacker")).thenReturn(Optional.of(hacker));
+
+        // when & then
+        assertThatThrownBy(() -> menuService.createMenu(storeId, request, "hacker"))
+                .isInstanceOf(com.sparta.delivhub.common.dto.BusinessException.class);
     }
 
     @Test
@@ -117,11 +159,11 @@ class MenuServiceTest {
     }
 
     @Test
-    @DisplayName("메뉴 단건 조회 성공")
+    @DisplayName("메뉴 상세 조회 성공")
     void getMenu() {
         // given
         when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
-        when(optionRepository.findAllByMenuIdWithItems(menuId)).thenReturn(List.of()); // 수정
+        when(optionRepository.findAllByMenuIdWithItems(menuId)).thenReturn(List.of());
 
         // when
         ResponseMenuDto response = menuService.getMenu(menuId);
@@ -135,29 +177,16 @@ class MenuServiceTest {
     void updateMenu() {
         // given
         UpdateMenuDto request = new UpdateMenuDto();
+        ReflectionTestUtils.setField(request, "name", "수정된 김치찌개");
+        
         when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
         when(optionRepository.findAllByMenuIdWithItems(menuId)).thenReturn(List.of());
 
         // when
-        ResponseMenuDto response = menuService.updateMenu(menuId, request, null);
+        menuService.updateMenu(menuId, request, "admin");
 
         // then
-        assertThat(response).isNotNull();
-        verify(menu, times(1)).update(request.getName(), request.getPrice(), request.getDescription());
-    }
-
-    @Test
-    @DisplayName("메뉴 숨김 처리 성공")
-    void updateMenuHidden() {
-        // given
-        HiddenMenuDto request = new HiddenMenuDto(true);
-        when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
-
-        // when
-        menuService.updateMenuHidden(menuId, request, null);
-
-        // then
-        verify(menu, times(1)).updateHidden(request.getIsHidden());
+        verify(menu, times(1)).update(eq("수정된 김치찌개"), any(), any());
     }
 
     @Test
@@ -167,9 +196,9 @@ class MenuServiceTest {
         when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
 
         // when
-        menuService.deleteMenu(menuId, null);
+        menuService.deleteMenu(menuId, "owner1");
 
         // then
-        verify(menu, times(1)).softDelete(null);
+        verify(menu, times(1)).softDelete("owner1");
     }
 }

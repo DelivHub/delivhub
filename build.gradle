@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '4.0.5'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'jacoco'
 }
 
 group = 'com.sparta'
@@ -11,6 +12,10 @@ java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(17)
 	}
+}
+
+jacoco {
+	toolVersion = "0.8.11"
 }
 
 repositories {
@@ -34,16 +39,16 @@ dependencies {
 
     // PostgreSQL 드라이버
     runtimeOnly 'org.postgresql:postgresql'
+    testRuntimeOnly 'com.h2database:h2'
 
     // Hibernate Spatial (PostGIS 위치 데이터를 Java 객체로 다루기 위함)
     implementation 'org.hibernate.orm:hibernate-spatial'
 
     //JUnit 5, Mockito, AssertJ
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.mockito:mockito-core:5.11.0'
-
-    // 스프링 시큐리티 테스트
     testImplementation 'org.springframework.security:spring-security-test'
+    // MockMvc 및 Test Autoconfigure를 명시적으로 추가
+    testImplementation 'org.springframework.boot:spring-boot-test-autoconfigure'
 
     // Validation 추가
     implementation 'org.springframework.boot:spring-boot-starter-validation'
@@ -60,14 +65,61 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	finalizedBy jacocoTestReport
 }
 
-// 빌드 시 명확한 파일명 지정을 위한 설정
+jacocoTestReport {
+	dependsOn test
+	reports {
+		html.required = true
+		xml.required = true
+		csv.required = false
+	}
+
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: [
+					"**/dto/**",
+					"**/config/**",
+					"**/security/**",
+					"**/*Application*",
+					"**/entity/**"
+			])
+		}))
+	}
+}
+
+jacocoTestCoverageVerification {
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: [
+					"**/dto/**",
+					"**/config/**",
+					"**/security/**",
+					"**/*Application*",
+					"**/entity/**",
+					"**/exception/**",
+					"**/handler/**",
+					"**/ai/service/AiService*"
+			])
+		}))
+	}
+	violationRules {
+		rule {
+			element = 'CLASS'
+			limit {
+				counter = 'LINE'
+				value = 'COVEREDRATIO'
+				minimum = 0.70
+			}
+		}
+	}
+}
+
 bootJar {
 	archiveFileName = 'app.jar'
 }
 
-// plain jar 생성 방지
 jar {
 	enabled = false
 }

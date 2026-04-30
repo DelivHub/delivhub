@@ -116,6 +116,24 @@ class AddressServiceTest {
     }
 
     @Test
+    @DisplayName("배송지_목록_조회_페이지_사이즈_제한_테스트")
+    void getAddresses_fallback_pageSize() {
+        // given
+        Pageable pageable = PageRequest.of(0, 100); // 허용되지 않는 사이즈 100
+        Page<Address> addressPage = new PageImpl<>(List.of(address), PageRequest.of(0, 10), 1);
+        
+        given(userService.findUserByUsername("user01")).willReturn(user);
+        given(addressRepository.findAll(any(Specification.class), any(Pageable.class))).willReturn(addressPage);
+
+        // when
+        addressService.getAddresses("user01", null, pageable);
+
+        // then
+        // 100을 넣어도 내부적으로 10으로 변환되어 리포지토리에 전달되는지 검증
+        verify(addressRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
     @DisplayName("배송지_목록_조회_키워드_검색_성공")
     void getAddresses_success_withKeyword() {
         // given

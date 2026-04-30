@@ -115,6 +115,22 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("유저_목록_조회_페이지_사이즈_제한_테스트")
+    void getUsers_fallback_pageSize() {
+        // given
+        Pageable pageable = PageRequest.of(0, 25); // 허용되지 않는 사이즈 25
+        Page<User> userPage = new PageImpl<>(List.of(user), PageRequest.of(0, 10), 1);
+        given(userRepository.findAll(any(Specification.class), any(Pageable.class))).willReturn(userPage);
+
+        // when
+        userService.getUsers(null, null, pageable);
+
+        // then
+        // 25를 넣어도 내부적으로 10으로 변환되어 리포지토리에 전달되는지 검증
+        verify(userRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
     @DisplayName("유저_단건_조회_성공")
     void getUser_success() {
         // given

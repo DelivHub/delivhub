@@ -122,6 +122,44 @@ class AreaServiceTest {
     }
 
     @Test
+    @DisplayName("지역 수정 성공")
+    void updateArea_Success() {
+        // given
+        UUID areaId = UUID.randomUUID();
+        String userId = "master01";
+        User master = User.builder().username(userId).userRole(UserRole.MASTER).build();
+        Area area = Area.builder().id(areaId).city("강원도").district("원주시").name("무실동").build();
+        AreaRequestDto request = new AreaRequestDto("서울특별시", "종로구", "광화문");
+
+        given(userRepository.findByUsernameAndDeletedAtIsNull(userId)).willReturn(Optional.of(master));
+        given(areaRepository.findById(areaId)).willReturn(Optional.of(area));
+
+        // when
+        AreaIdResponseDto response = areaService.updateArea(areaId, request, userId);
+
+        // then
+        assertThat(response.getAreaId()).isEqualTo(areaId);
+    }
+
+    @Test
+    @DisplayName("지역 수정 실패 - 존재하지 않는 지역")
+    void updateArea_Fail_AreaNotFound() {
+        // given
+        UUID areaId = UUID.randomUUID();
+        String userId = "master01";
+        User master = User.builder().username(userId).userRole(UserRole.MASTER).build();
+        AreaRequestDto request = new AreaRequestDto("서울특별시", "종로구", "광화문");
+
+        given(userRepository.findByUsernameAndDeletedAtIsNull(userId)).willReturn(Optional.of(master));
+        given(areaRepository.findById(areaId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> areaService.updateArea(areaId, request, userId))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.AREA_NOT_FOUND_ON_READ.getMessage());
+    }
+
+    @Test
     @DisplayName("지역 삭제 성공")
     void deleteArea_Success() {
         // given
