@@ -2,7 +2,8 @@ package com.sparta.delivhub.domain.area.controller;
 
 import com.sparta.delivhub.common.BaseControllerTest;
 import com.sparta.delivhub.domain.area.dto.response.AreaCityResponseDto;
-import com.sparta.delivhub.domain.area.dto.response.AreaIdResponseDto;
+import com.sparta.delivhub.domain.area.dto.response.AreaNameResponseDto;
+import com.sparta.delivhub.domain.area.dto.response.AreaResponseDto;
 import com.sparta.delivhub.domain.area.service.AreaService;
 import com.sparta.delivhub.domain.user.entity.UserRole;
 import org.junit.jupiter.api.DisplayName;
@@ -39,7 +40,7 @@ class AreaControllerTest extends BaseControllerTest {
                 "name", "역삼동",
                 "isHidden", false
         );
-        given(areaService.createArea(any(), anyString())).willReturn(mock(AreaIdResponseDto.class));
+        given(areaService.createArea(any(), anyString())).willReturn(mock(AreaResponseDto.class));
 
         mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -100,7 +101,7 @@ class AreaControllerTest extends BaseControllerTest {
                 "name", "서초동",
                 "isHidden", false
         );
-        given(areaService.updateArea(any(), any(), anyString())).willReturn(mock(AreaIdResponseDto.class));
+        given(areaService.updateArea(any(), any(), anyString())).willReturn(mock(AreaNameResponseDto.class));
 
         mockMvc.perform(put(BASE_URL + "/" + areaId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -123,7 +124,7 @@ class AreaControllerTest extends BaseControllerTest {
     @DisplayName("지역 삭제 성공 - MASTER 권한")
     void deleteArea_Success() throws Exception {
         mockUserSetup("master1", UserRole.MASTER);
-        given(areaService.deleteArea(any(), anyString())).willReturn(mock(AreaIdResponseDto.class));
+        given(areaService.deleteArea(any(), anyString())).willReturn(mock(AreaNameResponseDto.class));
 
         mockMvc.perform(delete(BASE_URL + "/" + areaId))
                 .andExpect(status().isOk());

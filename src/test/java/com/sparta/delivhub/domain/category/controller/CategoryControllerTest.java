@@ -1,7 +1,6 @@
 package com.sparta.delivhub.domain.category.controller;
 
 import com.sparta.delivhub.common.BaseControllerTest;
-import com.sparta.delivhub.domain.category.dto.response.CategoryIdResponseDto;
 import com.sparta.delivhub.domain.category.dto.response.CategoryNameResponseDto;
 import com.sparta.delivhub.domain.category.service.CategoryService;
 import com.sparta.delivhub.domain.user.entity.UserRole;
@@ -34,7 +33,7 @@ class CategoryControllerTest extends BaseControllerTest {
     void createCategory_Success() throws Exception {
         mockUserSetup("master1", UserRole.MASTER);
         Map<String, Object> request = Map.of("name", "한식", "isHidden", false);
-        given(categoryService.createCategory(any(), anyString())).willReturn(mock(CategoryIdResponseDto.class));
+        given(categoryService.createCategory(any(), anyString())).willReturn(mock(CategoryNameResponseDto.class));
 
         mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -90,7 +89,7 @@ class CategoryControllerTest extends BaseControllerTest {
     void updateCategory_Success() throws Exception {
         mockUserSetup("master1", UserRole.MASTER);
         Map<String, Object> request = Map.of("name", "중식", "isHidden", false);
-        given(categoryService.updateCategory(any(), any(), anyString())).willReturn(mock(CategoryIdResponseDto.class));
+        given(categoryService.updateCategory(any(), any(), anyString())).willReturn(mock(CategoryNameResponseDto.class));
 
         mockMvc.perform(put(BASE_URL + "/" + categoryId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -113,7 +112,7 @@ class CategoryControllerTest extends BaseControllerTest {
     @DisplayName("카테고리 삭제 성공 - MASTER 권한")
     void deleteCategory_Success() throws Exception {
         mockUserSetup("master1", UserRole.MASTER);
-        given(categoryService.deleteCategory(any(), anyString())).willReturn(mock(CategoryIdResponseDto.class));
+        given(categoryService.deleteCategory(any(), anyString())).willReturn(mock(CategoryNameResponseDto.class));
 
         mockMvc.perform(delete(BASE_URL + "/" + categoryId))
                 .andExpect(status().isOk());

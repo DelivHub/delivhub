@@ -3,7 +3,6 @@ package com.sparta.delivhub.domain.category.service;
 import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.domain.category.dto.requset.CategoryRequestDto;
-import com.sparta.delivhub.domain.category.dto.response.CategoryIdResponseDto;
 import com.sparta.delivhub.domain.category.dto.response.CategoryNameResponseDto;
 import com.sparta.delivhub.domain.category.entity.Category;
 import com.sparta.delivhub.domain.category.repository.CategoryRepository;
@@ -131,10 +130,10 @@ class CategoryServiceTest {
         given(categoryRepository.findById(categoryId)).willReturn(Optional.of(category));
 
         // when
-        CategoryIdResponseDto response = categoryService.updateCategory(categoryId, request, userId);
+        CategoryNameResponseDto response = categoryService.updateCategory(categoryId, request, userId);
 
         // then
-        assertThat(response.getCategoryId()).isEqualTo(categoryId);
+        assertThat(response.getName()).isEqualTo("중식");
     }
 
     @Test
@@ -166,9 +165,10 @@ class CategoryServiceTest {
         given(categoryRepository.findById(categoryId)).willReturn(Optional.of(category));
 
         // when
-        categoryService.deleteCategory(categoryId, userId);
+        CategoryNameResponseDto response = categoryService.deleteCategory(categoryId, userId);
 
         // then
+        assertThat(response.getName()).isEqualTo("분식");
         assertThat(category.getDeletedAt()).isNotNull();
         assertThat(category.getDeletedBy()).isEqualTo(userId);
     }

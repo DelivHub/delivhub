@@ -1,5 +1,7 @@
 package com.sparta.delivhub.domain.menu.service;
 
+import com.sparta.delivhub.common.dto.BusinessException;
+import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.domain.ai.service.AiService;
 import com.sparta.delivhub.domain.menu.dto.CreateMenuDto;
 import com.sparta.delivhub.domain.menu.dto.HiddenMenuDto;
@@ -8,6 +10,8 @@ import com.sparta.delivhub.domain.menu.dto.ResponseMenuListDto;
 import com.sparta.delivhub.domain.menu.dto.UpdateMenuDto;
 import com.sparta.delivhub.domain.menu.entity.Menu;
 import com.sparta.delivhub.domain.menu.repository.MenuRepository;
+import com.sparta.delivhub.domain.option.dto.CreateOptionDto;
+import com.sparta.delivhub.domain.option.entity.OptionType;
 import com.sparta.delivhub.domain.option.repository.OptionRepository;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.store.repository.StoreRepository;
@@ -25,7 +29,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -57,6 +63,7 @@ class MenuServiceTest {
     private UUID menuId;
     private Store store;
     private Menu menu;
+    private User admin;
 
     @BeforeEach
     void setUp() {
@@ -80,15 +87,15 @@ class MenuServiceTest {
         lenient().when(menu.getCreatedAt()).thenReturn(LocalDateTime.now());
         lenient().when(menu.getCreatedBy()).thenReturn("owner1");
 
-        User mockUser = mock(User.class);
-        lenient().when(mockUser.getUserRole()).thenReturn(UserRole.MASTER);
-        lenient().when(userRepository.findByUsernameAndDeletedAtIsNull(any())).thenReturn(Optional.of(mockUser));
+        admin = mock(User.class);
+        lenient().when(admin.getUsername()).thenReturn("admin");
+        lenient().when(admin.getUserRole()).thenReturn(UserRole.MASTER);
+        lenient().when(userRepository.findByUsernameAndDeletedAtIsNull(any())).thenReturn(Optional.of(admin));
     }
 
     @Test
     @DisplayName("메뉴 등록 성공")
     void createMenu() {
-        // given
         CreateMenuDto request = new CreateMenuDto();
         ReflectionTestUtils.setField(request, "name", "김치찌개");
         ReflectionTestUtils.setField(request, "price", 9000);
@@ -96,109 +103,149 @@ class MenuServiceTest {
         when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
         when(menuRepository.save(any(Menu.class))).thenReturn(menu);
 
-        // when
         ResponseMenuDto response = menuService.createMenu(storeId, request, "admin");
 
-        // then
         assertThat(response).isNotNull();
         verify(menuRepository, times(1)).save(any(Menu.class));
     }
 
     @Test
-    @DisplayName("메뉴 등록 성공 - AI 설명 자동 생성")
-    void createMenu_WithAiDescription() {
-        // given
+    @DisplayName("메뉴 등록 성공 - 옵션 포함")
+    void createMenu_WithOptions() {
         CreateMenuDto request = new CreateMenuDto();
-        ReflectionTestUtils.setField(request, "name", "제육볶음");
-        ReflectionTestUtils.setField(request, "price", 10000);
-        ReflectionTestUtils.setField(request, "aiDescription", true);
-        ReflectionTestUtils.setField(request, "aiPrompt", "매콤한 제육볶음 설명해줘");
+        ReflectionTestUtils.setField(request, "name", "치킨");
+        ReflectionTestUtils.setField(request, "price", 20000);
+        
+        CreateOptionDto.Item item = new CreateOptionDto.Item("양념", 1000L);
+        CreateOptionDto optionDto = new CreateOptionDto("소스선택", OptionType.SINGLE, List.of(item));
+        
+        ReflectionTestUtils.setField(request, "options", List.of(optionDto));
 
         when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
-        when(aiService.generateDescription(anyString(), anyString())).thenReturn("AI가 생성한 설명");
         when(menuRepository.save(any(Menu.class))).thenReturn(menu);
 
-        // when
-        menuService.createMenu(storeId, request, "owner1");
+        menuService.createMenu(storeId, request, "admin");
 
-        // then
-        verify(aiService, times(1)).generateDescription(anyString(), eq("매콤한 제육볶음 설명해줘"));
+        verify(optionRepository, times(1)).saveAll(any());
     }
 
     @Test
-    @DisplayName("메뉴 등록 실패 - 권한 없는 유저")
-    void createMenu_Fail_Unauthorized() {
-        // given
+    @DisplayName("메뉴 등록 실패 - AI 프롬프트 누락")
+    void createMenu_Fail_AiPromptRequired() {
         CreateMenuDto request = new CreateMenuDto();
-        User hacker = mock(User.class);
-        lenient().when(hacker.getUsername()).thenReturn("hacker");
-        lenient().when(hacker.getUserRole()).thenReturn(UserRole.CUSTOMER);
-        
-        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
-        when(userRepository.findByUsernameAndDeletedAtIsNull("hacker")).thenReturn(Optional.of(hacker));
+        ReflectionTestUtils.setField(request, "aiDescription", true);
+        ReflectionTestUtils.setField(request, "aiPrompt", "");
 
-        // when & then
-        assertThatThrownBy(() -> menuService.createMenu(storeId, request, "hacker"))
-                .isInstanceOf(com.sparta.delivhub.common.dto.BusinessException.class);
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+
+        assertThatThrownBy(() -> menuService.createMenu(storeId, request, "admin"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining(ErrorCode.AI_PROMPT_REQUIRED.getMessage());
     }
 
     @Test
-    @DisplayName("메뉴 목록 조회 성공")
-    void getMenus() {
-        // given
+    @DisplayName("메뉴 목록 조회 - 관리자 권한 (숨김 메뉴 포함)")
+    void getMenus_Admin() {
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Menu> menuPage = new PageImpl<>(List.of(menu));
         when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
-        when(menuRepository.findByStoreIdAndIsHiddenFalseAndDeletedAtIsNull(storeId, pageable)).thenReturn(menuPage);
+        when(menuRepository.findByStoreIdAndDeletedAtIsNull(eq(storeId), any())).thenReturn(new PageImpl<>(List.of(menu)));
 
-        // when
-        Page<ResponseMenuListDto> response = menuService.getMenus(storeId, pageable, false);
+        Page<ResponseMenuListDto> response = menuService.getMenus(storeId, pageable, true);
 
-        // then
         assertThat(response.getContent()).hasSize(1);
+        verify(menuRepository).findByStoreIdAndDeletedAtIsNull(any(), any());
     }
 
     @Test
-    @DisplayName("메뉴 상세 조회 성공")
-    void getMenu() {
-        // given
+    @DisplayName("메뉴 목록 조회 실패 - 가게 없음")
+    void getMenus_Fail_StoreNotFound() {
+        when(storeRepository.findById(storeId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> menuService.getMenus(storeId, PageRequest.of(0, 10), false))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining(ErrorCode.STORE_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    @DisplayName("메뉴 숨김 상태 수정 성공")
+    void updateMenuHidden() {
+        HiddenMenuDto request = new HiddenMenuDto();
+        ReflectionTestUtils.setField(request, "isHidden", true);
+
         when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
-        when(optionRepository.findAllByMenuIdWithItems(menuId)).thenReturn(List.of());
 
-        // when
-        ResponseMenuDto response = menuService.getMenu(menuId);
+        menuService.updateMenuHidden(menuId, request, "admin");
 
-        // then
-        assertThat(response).isNotNull();
+        verify(menu).updateHidden(true);
+    }
+
+    @Test
+    @DisplayName("이미지 기반 AI 설명 생성 성공")
+    void generateDescriptionFromImage_Success() {
+        MockMultipartFile image = new MockMultipartFile("image", "test.jpg", "image/jpeg", "test data".getBytes());
+        when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
+        when(aiService.generateDescriptionFromImage(anyString(), any(MultipartFile.class))).thenReturn("이미지 분석 결과");
+
+        menuService.generateDescriptionFromImage(menuId, image, "admin");
+
+        verify(aiService).generateDescriptionFromImage(eq("admin"), any());
+        verify(menu).update(any(), any(), eq("이미지 분석 결과"));
+    }
+
+    @Test
+    @DisplayName("이미지 기반 AI 설명 생성 실패 - 이미지 누락")
+    void generateDescriptionFromImage_Fail_EmptyImage() {
+        MockMultipartFile image = new MockMultipartFile("image", "", "image/jpeg", new byte[0]);
+        when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
+
+        assertThatThrownBy(() -> menuService.generateDescriptionFromImage(menuId, image, "admin"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining(ErrorCode.AI_IMAGE_REQUIRED.getMessage());
+    }
+
+    @Test
+    @DisplayName("메뉴 조회 실패 - 유저 없음")
+    void getMenuAndCheckPermission_Fail_UserNotFound() {
+        when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
+        when(userRepository.findByUsernameAndDeletedAtIsNull("none")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> menuService.deleteMenu(menuId, "none"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining(ErrorCode.USER_NOT_FOUND.getMessage());
     }
 
     @Test
     @DisplayName("메뉴 수정 성공")
     void updateMenu() {
-        // given
         UpdateMenuDto request = new UpdateMenuDto();
         ReflectionTestUtils.setField(request, "name", "수정된 김치찌개");
         
         when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
         when(optionRepository.findAllByMenuIdWithItems(menuId)).thenReturn(List.of());
 
-        // when
         menuService.updateMenu(menuId, request, "admin");
 
-        // then
         verify(menu, times(1)).update(eq("수정된 김치찌개"), any(), any());
     }
 
     @Test
     @DisplayName("메뉴 삭제 성공")
     void deleteMenu() {
-        // given
         when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
 
-        // when
         menuService.deleteMenu(menuId, "owner1");
 
-        // then
         verify(menu, times(1)).softDelete("owner1");
+    }
+
+    @Test
+    @DisplayName("메뉴 상세 조회 성공")
+    void getMenu() {
+        when(menuRepository.findByIdAndDeletedAtIsNull(menuId)).thenReturn(Optional.of(menu));
+        when(optionRepository.findAllByMenuIdWithItems(menuId)).thenReturn(List.of());
+
+        ResponseMenuDto response = menuService.getMenu(menuId);
+
+        assertThat(response).isNotNull();
     }
 }

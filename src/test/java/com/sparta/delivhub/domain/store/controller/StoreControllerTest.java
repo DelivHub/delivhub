@@ -6,7 +6,7 @@ import com.sparta.delivhub.domain.payment.service.PaymentService;
 import com.sparta.delivhub.domain.review.dto.StoreReviewPageResponseDto;
 import com.sparta.delivhub.domain.review.service.ReviewService;
 import com.sparta.delivhub.domain.store.dto.response.StoreDetailResponseDto;
-import com.sparta.delivhub.domain.store.dto.response.StoreIdResponseDto;
+import com.sparta.delivhub.domain.store.dto.response.StoreNameResponseDto;
 import com.sparta.delivhub.domain.store.service.StoreService;
 import com.sparta.delivhub.domain.user.entity.UserRole;
 import org.junit.jupiter.api.DisplayName;
@@ -51,7 +51,7 @@ class StoreControllerTest extends BaseControllerTest {
                 "number", "02-1234-5678",
                 "isHidden", false
         );
-        given(storeService.createStore(any(), anyString())).willReturn(mock(StoreIdResponseDto.class));
+        given(storeService.createStore(any(), anyString())).willReturn(mock(StoreDetailResponseDto.class));
 
         mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -102,7 +102,7 @@ class StoreControllerTest extends BaseControllerTest {
                 "number", "02-9999-8888",
                 "isHidden", false
         );
-        given(storeService.updateStore(any(), any(), anyString())).willReturn(mock(StoreIdResponseDto.class));
+        given(storeService.updateStore(any(), any(), anyString())).willReturn(mock(StoreNameResponseDto.class));
 
         mockMvc.perform(put(BASE_URL + "/" + storeId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -125,7 +125,7 @@ class StoreControllerTest extends BaseControllerTest {
     @DisplayName("가게 삭제 성공 - OWNER 권한")
     void deleteStore_Success() throws Exception {
         mockUserSetup("owner1", UserRole.OWNER);
-        given(storeService.deleteStore(any(), anyString())).willReturn(mock(StoreIdResponseDto.class));
+        given(storeService.deleteStore(any(), anyString())).willReturn(mock(StoreNameResponseDto.class));
 
         mockMvc.perform(delete(BASE_URL + "/" + storeId))
                 .andExpect(status().isOk());

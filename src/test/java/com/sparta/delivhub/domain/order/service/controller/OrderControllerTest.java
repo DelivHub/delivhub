@@ -1,11 +1,11 @@
 package com.sparta.delivhub.domain.order.service.controller;
 
 import com.sparta.delivhub.common.BaseControllerTest;
-import com.sparta.delivhub.domain.order.service.dto.OrderRequestDto;
-import com.sparta.delivhub.domain.order.service.dto.OrderResponseDto;
-import com.sparta.delivhub.domain.order.service.entity.OrderType;
+import com.sparta.delivhub.domain.order.dto.OrderRequestDto;
+import com.sparta.delivhub.domain.order.dto.OrderResponseDto;
+import com.sparta.delivhub.domain.order.entity.OrderType;
 import com.sparta.delivhub.domain.user.entity.UserRole;
-import com.sparta.delivhub.domain.order.service.service.OrderService;
+import com.sparta.delivhub.domain.order.service.OrderService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
