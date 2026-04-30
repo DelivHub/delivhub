@@ -1,14 +1,15 @@
 package com.sparta.delivhub.domain.store.controller;
 
 import com.sparta.delivhub.common.dto.ApiResponse;
+import com.sparta.delivhub.common.util.PageableUtils;
 import com.sparta.delivhub.domain.payment.dto.StorePaymentListResponseDto;
 import com.sparta.delivhub.domain.payment.service.PaymentService;
 import com.sparta.delivhub.domain.review.service.ReviewService;
 import com.sparta.delivhub.domain.store.dto.requset.StoreRequestDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreDetailResponseDto;
-import com.sparta.delivhub.domain.store.dto.response.StoreIdResponseDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreListResponseDto;
 import com.sparta.delivhub.domain.review.dto.StoreReviewPageResponseDto;
+import com.sparta.delivhub.domain.store.dto.response.StoreNameResponseDto;
 import com.sparta.delivhub.domain.store.service.StoreService;
 import com.sparta.delivhub.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
@@ -36,14 +37,14 @@ public class StoreController {
     private final PaymentService paymentService;
 
     @PostMapping("/stores")
-    public ApiResponse<StoreIdResponseDto> createStore(@RequestBody StoreRequestDto storeRequestDto, @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        StoreIdResponseDto id = storeService.createStore(storeRequestDto, userDetails.getUsername());
-        return ApiResponse.success(id);
+    public ApiResponse<StoreDetailResponseDto> createStore(@RequestBody StoreRequestDto storeRequestDto, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        StoreDetailResponseDto id = storeService.createStore(storeRequestDto, userDetails.getUsername());
+        return ApiResponse.created(id);
     }
 
     @GetMapping("/stores")
     public ApiResponse<List<StoreListResponseDto>> getAllStores(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam(defaultValue = "createdAt,DESC") String sort) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
+        Pageable pageable = PageableUtils.of(page, size, sort);
         return ApiResponse.success(storeService.findAllStores(pageable));
     }
 
@@ -53,14 +54,14 @@ public class StoreController {
     }
 
     @PutMapping("/stores/{storeId}")
-    public ApiResponse<StoreIdResponseDto> updateStore(@PathVariable("storeId") UUID storeId, @RequestBody StoreRequestDto storeRequestDto, @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        StoreIdResponseDto id = storeService.updateStore(storeId, storeRequestDto, userDetails.getUsername());
+    public ApiResponse<StoreNameResponseDto> updateStore(@PathVariable("storeId") UUID storeId, @RequestBody StoreRequestDto storeRequestDto, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        StoreNameResponseDto id = storeService.updateStore(storeId, storeRequestDto, userDetails.getUsername());
         return ApiResponse.success(id);
     }
 
     @DeleteMapping("/stores/{storeId}")
-    public ApiResponse<StoreIdResponseDto> deleteStore(@PathVariable("storeId") UUID storeId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        StoreIdResponseDto id = storeService.deleteStore(storeId, userDetails.getUsername());
+    public ApiResponse<StoreNameResponseDto> deleteStore(@PathVariable("storeId") UUID storeId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        StoreNameResponseDto id = storeService.deleteStore(storeId, userDetails.getUsername());
         return ApiResponse.success(id);
     }
 

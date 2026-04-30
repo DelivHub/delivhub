@@ -2,18 +2,15 @@ package com.sparta.delivhub.domain.payment.service;
 
 import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
-import com.sparta.delivhub.domain.order.service.entity.Order;
-import com.sparta.delivhub.domain.order.service.entity.OrderStatus;
-import com.sparta.delivhub.domain.order.service.repository.OrderRepository;
+import com.sparta.delivhub.domain.order.entity.Order;
+import com.sparta.delivhub.domain.order.repository.OrderRepository;
 import com.sparta.delivhub.domain.payment.dto.MyPaymentListResponseDto;
 import com.sparta.delivhub.domain.payment.dto.RequestPaymentDTO;
 import com.sparta.delivhub.domain.payment.dto.ResponsePaymentDTO;
-import com.sparta.delivhub.domain.payment.dto.StorePaymentListResponseDto;
 import com.sparta.delivhub.domain.payment.entity.Payment;
 import com.sparta.delivhub.domain.payment.entity.PaymentMethod;
 import com.sparta.delivhub.domain.payment.entity.PaymentStatus;
 import com.sparta.delivhub.domain.payment.repository.PaymentRepository;
-import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.store.repository.StoreRepository;
 import com.sparta.delivhub.domain.user.entity.User;
 import com.sparta.delivhub.domain.user.entity.UserRole;
@@ -236,5 +233,51 @@ class PaymentServiceTest {
         // then
         assertNotNull(response);
         assertEquals(1, response.getContent().size());
+        }
+
+        // ==========================================
+        // 4. 관리자 전용 상태 수정
+        // ==========================================
+
+    @Test
+    @DisplayName("결제 상태 수정 성공 - 관리자 권한 (MASTER)")
+    void updatePaymentStatus_Success_Admin() {
+        // given
+        UUID paymentId = UUID.randomUUID();
+        User admin = createMockUser("admin", UserRole.MASTER);
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+
+        Order order = Order.builder().userId("user123").build();
+        Payment payment = Payment.builder()
+                .order(order)
+                .amount(10000L)
+                .paymentMethod(PaymentMethod.CARD)
+                .status(PaymentStatus.COMPLETED)
+                .build();
+        ReflectionTestUtils.setField(payment, "id", paymentId);
+        ReflectionTestUtils.setField(payment, "createdAt", LocalDateTime.now());
+
+        when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(payment));
+
+        // when
+        ResponsePaymentDTO response = paymentService.updatePaymentStatus(paymentId, "CANCELLED", "admin");
+
+        // then
+        assertEquals("CANCELLED", response.getStatus());
+        assertEquals(PaymentStatus.CANCELLED, payment.getStatus());
     }
-}
+
+        @Test
+        @DisplayName("결제 상태 수정 실패 - 일반 고객(CUSTOMER)의 접근 차단")
+        void updatePaymentStatus_Fail_AccessDenied() {
+        // given
+        UUID paymentId = UUID.randomUUID();
+        when(userRepository.findByUsername(currentUserId)).thenReturn(Optional.of(customer));
+
+        // when & then
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> paymentService.updatePaymentStatus(paymentId, "CANCELLED", currentUserId));
+
+        assertEquals(ErrorCode.ACCESS_DENIED, exception.getErrorCode());
+        }
+        }

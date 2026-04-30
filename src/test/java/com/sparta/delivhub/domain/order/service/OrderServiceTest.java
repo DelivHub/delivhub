@@ -3,15 +3,14 @@ package com.sparta.delivhub.domain.order.service;
 import com.sparta.delivhub.domain.menu.entity.Menu;
 import com.sparta.delivhub.domain.menu.repository.MenuRepository;
 import com.sparta.delivhub.domain.option.repository.OptionItemRepository;
-import com.sparta.delivhub.domain.order.service.dto.OrderRequestDto;
-import com.sparta.delivhub.domain.order.service.dto.OrderResponseDto;
-import com.sparta.delivhub.domain.order.service.entity.Order;
-import com.sparta.delivhub.domain.order.service.entity.OrderStatus;
-import com.sparta.delivhub.domain.order.service.entity.OrderType;
-import com.sparta.delivhub.domain.order.service.exception.OrderCancellationNotAllowedException;
-import com.sparta.delivhub.domain.order.service.exception.UnauthorizedOrderAccessException;
-import com.sparta.delivhub.domain.order.service.repository.OrderRepository;
-import com.sparta.delivhub.domain.order.service.service.OrderService;
+import com.sparta.delivhub.domain.order.dto.OrderRequestDto;
+import com.sparta.delivhub.domain.order.dto.OrderResponseDto;
+import com.sparta.delivhub.domain.order.entity.Order;
+import com.sparta.delivhub.domain.order.entity.OrderStatus;
+import com.sparta.delivhub.domain.order.entity.OrderType;
+import com.sparta.delivhub.domain.order.exception.OrderCancellationNotAllowedException;
+import com.sparta.delivhub.domain.order.exception.UnauthorizedOrderAccessException;
+import com.sparta.delivhub.domain.order.repository.OrderRepository;
 import com.sparta.delivhub.domain.payment.repository.PaymentRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -228,6 +227,23 @@ class OrderServiceTest {
     }
 
     @Test
+    @DisplayName("주문 취소 테스트 - MASTER 권한은 5분 경과 후에도 취소 성공")
+    void cancelOrder_Master_Success_AfterTimeExceeded() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        Order order = Order.builder().userId("user01").build();
+        ReflectionTestUtils.setField(order, "createdAt", LocalDateTime.now().minusMinutes(10));
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        // when
+        orderService.cancelOrder(orderId, "admin", "MASTER");
+
+        // then
+        assertEquals(OrderStatus.CANCELED, order.getStatus());
+    }
+
+    @Test
     @DisplayName("페이지네이션 테스트 - 허용되지 않는 사이즈 입력 시 10으로 고정")
     void validatePageSize_Fallback() {
         // given
@@ -238,5 +254,20 @@ class OrderServiceTest {
 
         // then
         verify(orderRepository).findAll(argThat((Pageable p) -> p.getPageSize() == 10));
+    }
+
+    @Test
+    @DisplayName("주문 삭제 테스트 - 성공")
+    void deleteOrder_Success() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        Order order = Order.builder().userId("user01").build();
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        // when
+        orderService.deleteOrder(orderId, "admin");
+
+        // then
+        assertTrue(order.isDeleted());
     }
 }

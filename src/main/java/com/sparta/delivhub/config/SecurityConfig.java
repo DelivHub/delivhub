@@ -46,7 +46,6 @@ public class SecurityConfig {
 
                         //User
                         .requestMatchers(HttpMethod.GET, "/api/v1/users").hasAnyRole("MANAGER", "MASTER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/users/*").hasAnyRole("MANAGER", "MASTER")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/users/*/role").hasRole("MASTER")
 
                         //Address

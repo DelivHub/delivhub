@@ -8,8 +8,8 @@ import com.sparta.delivhub.domain.category.entity.Category;
 import com.sparta.delivhub.domain.category.repository.CategoryRepository;
 import com.sparta.delivhub.domain.store.dto.requset.StoreRequestDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreDetailResponseDto;
-import com.sparta.delivhub.domain.store.dto.response.StoreIdResponseDto;
 import com.sparta.delivhub.domain.store.dto.response.StoreListResponseDto;
+import com.sparta.delivhub.domain.store.dto.response.StoreNameResponseDto;
 import com.sparta.delivhub.domain.store.entity.Store;
 import com.sparta.delivhub.domain.store.repository.StoreRepository;
 import com.sparta.delivhub.domain.user.entity.User;
@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -55,32 +56,49 @@ class StoreServiceTest {
     private UserRepository userRepository;
 
     @Test
-    @DisplayName("가게 생성 성공")
+    @DisplayName("가게 생성 성공 - 사장님 권한으로 생성")
     void createStore_Success() {
         // given
         String userId = "ownerUser";
         UUID categoryId = UUID.randomUUID();
         UUID areaId = UUID.randomUUID();
+
         StoreRequestDto request = new StoreRequestDto("원주반점", categoryId, areaId, "원주시 무실동", "033-123-4567");
 
-        User owner = User.builder().username(userId).userRole(UserRole.OWNER).build();
-        given(userRepository.findByUsernameAndDeletedAtIsNull(userId)).willReturn(Optional.of(owner));
-        given(categoryRepository.findById(categoryId)).willReturn(Optional.of(Category.builder().build()));
-        given(areaRepository.findById(areaId)).willReturn(Optional.of(Area.builder().build()));
+        User owner = User.builder()
+                .username(userId)
+                .userRole(UserRole.OWNER)
+                .build();
 
+        Category category = Category.builder().id(categoryId).name("중식").build();
+        Area area = Area.builder().id(areaId).name("원주").build();
+
+        given(userRepository.findByUsernameAndDeletedAtIsNull(userId)).willReturn(Optional.of(owner));
+        given(categoryRepository.findById(categoryId)).willReturn(Optional.of(category));
+        given(areaRepository.findById(areaId)).willReturn(Optional.of(area));
+
+        UUID savedStoreId = UUID.randomUUID();
         Store savedStore = Store.builder()
-                .id(UUID.randomUUID())
+                .id(savedStoreId)
                 .name(request.getName())
+                .address(request.getAddress())
+                .number(request.getNumber())
                 .averageRating(BigDecimal.ZERO)
                 .build();
+
         given(storeRepository.save(any(Store.class))).willReturn(savedStore);
 
         // when
-        StoreIdResponseDto response = storeService.createStore(request, userId);
+        StoreDetailResponseDto response = storeService.createStore(request, userId);
 
         // then
-        assertThat(response.getStoreId()).isEqualTo(savedStore.getId());
-        verify(storeRepository).save(any(Store.class));
+        assertThat(response).isNotNull();
+        assertThat(response.getStoreId()).isEqualTo(savedStoreId);
+        assertThat(response.getName()).isEqualTo("원주반점");
+        assertThat(response.getAverage_rating()).isEqualTo(BigDecimal.ZERO); // 평점 0.0 검증
+
+        verify(userRepository, times(1)).findByUsernameAndDeletedAtIsNull(userId);
+        verify(storeRepository, times(1)).save(any(Store.class));
     }
 
     @Test
@@ -155,11 +173,11 @@ class StoreServiceTest {
         given(userRepository.findByUsernameAndDeletedAtIsNull(userId)).willReturn(Optional.of(owner));
 
         // when
-        StoreIdResponseDto response = storeService.updateStore(storeId, updateRequest, userId);
+        StoreNameResponseDto response = storeService.updateStore(storeId, updateRequest, userId);
 
         // then
         assertThat(store.getName()).isEqualTo("수정된 가게");
-        assertThat(response.getStoreId()).isEqualTo(storeId);
+        assertThat(response.getName()).isEqualTo("수정된 가게");
     }
 
     @Test

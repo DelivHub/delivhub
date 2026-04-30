@@ -4,7 +4,7 @@ import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.domain.area.dto.requset.AreaRequestDto;
 import com.sparta.delivhub.domain.area.dto.response.AreaCityResponseDto;
-import com.sparta.delivhub.domain.area.dto.response.AreaIdResponseDto;
+import com.sparta.delivhub.domain.area.dto.response.AreaNameResponseDto;
 import com.sparta.delivhub.domain.area.dto.response.AreaResponseDto;
 import com.sparta.delivhub.domain.area.entity.Area;
 import com.sparta.delivhub.domain.area.repository.AreaRepository;
@@ -57,10 +57,12 @@ class AreaServiceTest {
         given(areaRepository.save(any(Area.class))).willReturn(savedArea);
 
         // when
-        AreaIdResponseDto response = areaService.createArea(request, userId);
+        AreaResponseDto response = areaService.createArea(request, userId);
 
         // then
-        assertThat(response.getAreaId()).isEqualTo(savedArea.getId());
+        assertThat(response.getCity()).isEqualTo(savedArea.getCity());
+        assertThat(response.getDistrict()).isEqualTo(savedArea.getDistrict());
+        assertThat(response.getName()).isEqualTo(savedArea.getName());
         verify(areaRepository).save(any(Area.class));
     }
 
@@ -119,6 +121,44 @@ class AreaServiceTest {
         // then
         assertThat(response.getCity()).isEqualTo("강원도");
         verify(areaRepository).findById(areaId);
+    }
+
+    @Test
+    @DisplayName("지역 수정 성공")
+    void updateArea_Success() {
+        // given
+        UUID areaId = UUID.randomUUID();
+        String userId = "master01";
+        User master = User.builder().username(userId).userRole(UserRole.MASTER).build();
+        Area area = Area.builder().id(areaId).city("강원도").district("원주시").name("무실동").build();
+        AreaRequestDto request = new AreaRequestDto("서울특별시", "종로구", "광화문");
+
+        given(userRepository.findByUsernameAndDeletedAtIsNull(userId)).willReturn(Optional.of(master));
+        given(areaRepository.findById(areaId)).willReturn(Optional.of(area));
+
+        // when
+        AreaNameResponseDto response = areaService.updateArea(areaId, request, userId);
+
+        // then
+        assertThat(response.getName()).isEqualTo("광화문");
+    }
+
+    @Test
+    @DisplayName("지역 수정 실패 - 존재하지 않는 지역")
+    void updateArea_Fail_AreaNotFound() {
+        // given
+        UUID areaId = UUID.randomUUID();
+        String userId = "master01";
+        User master = User.builder().username(userId).userRole(UserRole.MASTER).build();
+        AreaRequestDto request = new AreaRequestDto("서울특별시", "종로구", "광화문");
+
+        given(userRepository.findByUsernameAndDeletedAtIsNull(userId)).willReturn(Optional.of(master));
+        given(areaRepository.findById(areaId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> areaService.updateArea(areaId, request, userId))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.AREA_NOT_FOUND_ON_READ.getMessage());
     }
 
     @Test
