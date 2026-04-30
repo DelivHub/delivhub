@@ -25,9 +25,9 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @PostMapping("/categories")
-    public ApiResponse<CategoryIdResponseDto> createCategory(@Valid @RequestBody CategoryRequestDto categoryRequestDto,  @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        CategoryIdResponseDto id = categoryService.createCategory(categoryRequestDto, userDetails.getUsername());
-        return ApiResponse.success(id);
+    public ApiResponse<CategoryNameResponseDto> createCategory(@Valid @RequestBody CategoryRequestDto categoryRequestDto,  @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        CategoryNameResponseDto id = categoryService.createCategory(categoryRequestDto, userDetails.getUsername());
+        return ApiResponse.created(id);
     }
 
     @GetMapping("/categories")
@@ -42,14 +42,14 @@ public class CategoryController {
     }
 
     @PutMapping("/categories/{categoryId}")
-    public ApiResponse<CategoryIdResponseDto> updateCategory(@PathVariable("categoryId") UUID categoryId, @Valid @RequestBody CategoryRequestDto categoryRequestDto, @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        CategoryIdResponseDto id = categoryService.updateCategory(categoryId, categoryRequestDto, userDetails.getUsername());
+    public ApiResponse<CategoryNameResponseDto> updateCategory(@PathVariable("categoryId") UUID categoryId, @Valid @RequestBody CategoryRequestDto categoryRequestDto, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        CategoryNameResponseDto id = categoryService.updateCategory(categoryId, categoryRequestDto, userDetails.getUsername());
         return ApiResponse.success(id);
     }
 
     @DeleteMapping("/categories/{categoryId}")
-    public ApiResponse<CategoryIdResponseDto> deleteCategory(@PathVariable("categoryId") UUID categoryId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        CategoryIdResponseDto id = categoryService.deleteCategory(categoryId, userDetails.getUsername());
+    public ApiResponse<CategoryNameResponseDto> deleteCategory(@PathVariable("categoryId") UUID categoryId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        CategoryNameResponseDto id = categoryService.deleteCategory(categoryId, userDetails.getUsername());
         return ApiResponse.success(id);
     }
 
