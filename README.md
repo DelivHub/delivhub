@@ -26,7 +26,7 @@
 
 ### 주요 기능
 
-- **보안**: Spring Security + JWT: Role-based Access Control (Admin, Owner, Customer) 토큰 기반 인증을 통한 보안 강화 
+- **보안**: Spring Security + JWT: RBAC(CUSTOMER, OWNER, MANAGER, MASTER) 및 토큰 기반 인증 강화
 - **주문**: 카드 결제 가상 연동 및 주문 상태 관리(접수, 배달 중, 완료)
 - **AI 연동**: Gemini API 활용하여 메뉴 등록 시 키워드만으로 풍부한 상품 설명 자동 생성, 점주의 운영 편의성 증대 및 플랫폼 콘텐츠 퀄리티 상향 평준화
 
@@ -36,7 +36,7 @@
 |-------------------------|------|
 | 2026.04.16 ~ 2026.04.20 | 기획 및 설계 |
 | 2026.04.20 ~ 2026.04.26 | 개발 |
-| 2026.04.27 ~ 2025.04.30 | 테스트 및 배포 |
+| 2026.04.27 ~ 2026.04.30 | 테스트 및 배포 |
 
 <br>
 
@@ -129,13 +129,13 @@
 <details>
 <summary>👤 회원 API</summary>
 
-| Method | URI | 설명 | 권한 |
-|--------|-----|------|------|
-| POST | /api/v1/auth/signup | 회원가입 | 전체 |
-| POST | /api/v1/auth/login | 로그인 | 전체 |
+| Method | URI | 설명 | 권한     |
+|--------|-----|------|--------|
+| POST | /api/v1/auth/signup | 회원가입 | 전체     |
+| POST | /api/v1/auth/login | 로그인 | 전체     |
 | GET | /api/v1/users/{username} | 회원 조회 | 본인/관리자 |
-| PUT | /api/v1/users/{username} | 회원 수정 | 본인 |
-| DELETE | /api/v1/users/{username} | 회원 탈퇴 | 본인 |
+| PUT | /api/v1/users/{username} | 회원 수정 | 본인/관리자 |
+| DELETE | /api/v1/users/{username} | 회원 탈퇴 | 본인/관리자 |
 
 </details>
 
@@ -155,23 +155,23 @@
 <details>
 <summary>🛒 주문 API</summary>
 
-| Method | URI | 설명 | 권한 |
-|--------|-----|------|------|
-| POST | /api/v1/orders | 주문 생성 | CUSTOMER |
-| GET | /api/v1/orders | 주문 목록 조회 | 본인/관리자 |
-| GET | /api/v1/orders/{orderId} | 주문 상세 조회 | 본인/관리자 |
-| PATCH | /api/v1/orders/{orderId}/cancel | 주문 취소 | 본인 |
+| Method | URI | 설명                 | 권한 |
+|--------|-----|--------------------|------|
+| POST | /api/v1/orders | 주문 생성              | CUSTOMER |
+| GET | /api/v1/orders | 주문 목록 조회           | 본인/관리자 |
+| GET | /api/v1/orders/{orderId} | 주문 상세 조회           | 본인/관리자 |
+| PATCH | /api/v1/orders/{orderId}/cancel | 주문 취소 (생성 후 5분 이내) | 본인 |
 
 </details>
 
 <details>
 <summary>💳 결제 API</summary>
 
-| Method | URI | 설명 | 권한 |
-|--------|-----|------|------|
-| POST | /api/v1/payments | 결제 요청 | CUSTOMER |
-| GET | /api/v1/payments/{paymentId} | 결제 조회 | 본인/관리자 |
-| PATCH | /api/v1/payments/{paymentId}/cancel | 결제 취소 | 본인 |
+| Method | URI | 설명                  | 권한 |
+|--------|-----|---------------------|------|
+| POST | /api/v1/payments | 결제 요청 (CARD 방식만 허용) | CUSTOMER |
+| GET | /api/v1/payments/{paymentId} | 결제 조회               | 본인/관리자 |
+| PATCH | /api/v1/payments/{paymentId}/cancel | 결제 취소               | 본인 |
 
 </details>
 
@@ -223,11 +223,12 @@ src
 │  │              │  ├─store
 │  │              │  └─user
 │  │              └─security
-│  │                 ├─JpaAuditingConfig
-│  │                 ├─RedisConfig
-│  │                 ├─RestClientConfig
-│  │                 ├─SecurityConfig
-│  │                 └─SwaggerConfig
+│  │                 ├─JwtAuthenticationEntryPoint
+│  │                 ├─JwtAuthenticationFilter
+│  │                 ├─JwtTokenProvider
+│  │                 ├─TokenService
+│  │                 ├─UserDetailServiceImpl    
+│  │                 └─UserDetailsImpl
 │  └─resources
 └─test
 
