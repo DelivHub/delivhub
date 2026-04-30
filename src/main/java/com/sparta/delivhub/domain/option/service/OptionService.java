@@ -82,7 +82,7 @@ public class OptionService {
         if (request.getItems() != null) {
             updateOptionItems(option, request.getItems(), username);
         }
-
+        optionRepository.saveAndFlush(option);
         return ResponseOptionDto.from(option);
     }
 
