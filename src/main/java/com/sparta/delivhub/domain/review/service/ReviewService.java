@@ -39,7 +39,8 @@ public class ReviewService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // 1. 권한 검사 (명세서 Auth: CUSTOMER)
-        if (!"CUSTOMER".equals(userRole)) {
+        String cleanedRole = userRole.replace("ROLE_", "");
+        if (!"CUSTOMER".equals(cleanedRole)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
@@ -90,14 +91,16 @@ public class ReviewService {
     /**
      * 내 리뷰 목록 조회 (페이징)
      */
-    @Transactional(readOnly = true) // 단순 조회용이므로 성능 최적화를 위해 readOnly 적용
+    @Transactional(readOnly = true)
     public MyReviewListResponseDto getMyReviews(String currentUserId, String userRole, Pageable pageable) {
 
         // 1. 권한 검사 (CUSTOMER 만 조회 가능)
         User user = userRepository.findByUsername(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        if (!"CUSTOMER".equals(user.getUserRole().name())) {
+        // ROLE_ 접두사 제거 후 비교
+        String cleanedRole = user.getUserRole().name().replace("ROLE_", "");
+        if (!"CUSTOMER".equals(cleanedRole)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
@@ -133,7 +136,9 @@ public class ReviewService {
         User user = userRepository.findByUsername(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        if (!"CUSTOMER".equals(user.getUserRole().name())) {
+        // ROLE_ 접두사 제거 후 비교
+        String cleanedRole = user.getUserRole().name().replace("ROLE_", "");
+        if (!"CUSTOMER".equals(cleanedRole)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
@@ -166,7 +171,8 @@ public class ReviewService {
         // 1. 리뷰 조회
         User user = userRepository.findByUsername(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        String dbRole = user.getUserRole().name();
+        // DB에서 가져온 역할을 "CUSTOMER", "OWNER" 등으로 통일
+        String dbRole = user.getUserRole().name().replace("ROLE_", "");
 
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REVIEW_NOT_FOUND));
@@ -215,16 +221,14 @@ public class ReviewService {
         // 1. DB에서 해당 가게의 평균 별점 계산
         Double average = reviewRepository.calculateAverageRatingByStoreId(store.getId());
 
-        // 💡 리뷰가 하나도 없어서 average가 null로 나올 경우 방어 로직 추가
         if (average == null) {
             average = 0.0;
         }
 
-        // 2. Double을 BigDecimal로 변환 (소수점 첫째 자리까지만 반올림)
         BigDecimal newAverageRating = BigDecimal.valueOf(average)
                 .setScale(1, RoundingMode.HALF_UP);
 
-        // 3. Store 엔티티 업데이트 (더티 체킹 발생)
+        // 2. Store 엔티티 업데이트 (더티 체킹 발생)
         store.updateAverageRating(newAverageRating);
     }
 
@@ -236,7 +240,6 @@ public class ReviewService {
     public StoreReviewPageResponseDto getReviewsByStore(UUID storeId, Pageable pageable) {
 
         // 1. 가게 존재 여부 확인 및 정보(평균 평점) 가져오기
-        // (명세서 우측의 STORE_NOT_FOUND 404 에러 방어)
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORE_NOT_FOUND));
 

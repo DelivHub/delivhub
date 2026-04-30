@@ -23,7 +23,6 @@ public class MyReviewListResponseDto {
     @Builder
     public MyReviewListResponseDto(String userId, Page<Review> reviewPage) {
         this.userId = userId;
-        // Page<Review> 안의 엔티티들을 MyReviewDto로 싹 다 변환해서 리스트로 만듭니다.
         this.reviews = reviewPage.getContent().stream()
                 .map(MyReviewDto::new)
                 .collect(Collectors.toList());

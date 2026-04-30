@@ -33,6 +33,7 @@ public class PaymentController {
         ResponsePaymentDTO responseData = paymentService.createPayment(request, currentUserId);
 
         // 2. API 명세서의 공통 응답 규격 맞추기
+
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(responseData));
     }
     /**

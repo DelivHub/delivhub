@@ -35,9 +35,12 @@ public class PaymentService {
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
 
+    /**
+     * 결제 생성
+     */
     @Transactional
     public ResponsePaymentDTO createPayment(RequestPaymentDTO request, String currentUserId) {
-        // [안전장치] 입력값 null 체크
+
         if (request == null || request.getOrderId() == null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_DATA);
         }
@@ -95,15 +98,12 @@ public class PaymentService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
 
-        // ✨ [보안 강화] 토큰의 Role 대신 DB의 최신 Role을 사용하여 검증
+        // 토큰의 Role 대신 DB의 최신 Role을 사용하여 검증
         User currentUser = userRepository.findByUsername(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         String dbRole = currentUser.getUserRole().name();
 
         // 2. 권한 검증
-        // CUSTOMER(일반 고객)인 경우, 반드시 자신의 결제 내역만 조회할 수 있어야 합니다.
-        // MANAGER나 MASTER는 모든 결제 내역을 조회할 수 있도록 예외를 둡니다.
-        // [안전장치] DB Role 직접 비교 (Enum 활용)
         if (UserRole.CUSTOMER == currentUser.getUserRole()) {
             // [안전장치] currentUserId를 앞에 두어 NPE 방어
             if (!currentUserId.equals(payment.getOrder().getUserId())) {
@@ -121,14 +121,12 @@ public class PaymentService {
     @Transactional
     public ResponsePaymentDTO updatePaymentStatus(UUID paymentId, String newStatusStr, String currentUserId) {
 
-         // [보안 강화] 토큰의 Role이 아닌, DB에서 방금 꺼내온 확실한 Role로 검증
         User currentUser = userRepository.findByUsername(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         String dbRole = currentUser.getUserRole().name();
 
-        // 1. 권한 검증 (명세서 요구사항: MANAGER, MASTER 만 접근 가능)
+        // 1. 권한 검증 (MANAGER, MASTER 만 접근 가능)
         if (!"MANAGER".equals(dbRole) && !"MASTER".equals(dbRole)) {
-            // 이전에 정의한 에러코드 (예: ACCESS_DENIED 혹은 PAYMENT_ACCESS_DENIED)
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
@@ -141,7 +139,6 @@ public class PaymentService {
         try {
             newStatus = PaymentStatus.valueOf(newStatusStr.toUpperCase());
         } catch (IllegalArgumentException e) {
-            // "CANCELLED", "COMPLETED" 등 약속된 상태값이 아닐 경우 에러
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
@@ -149,7 +146,6 @@ public class PaymentService {
         payment.updateStatus(newStatus);
 
         // 5. 결과 반환
-        // @Transactional 덕분에 코드가 끝날 때 JPA가 알아서 DB에 UPDATE 쿼리를 날려줍니다. (더티 체킹)
         return new ResponsePaymentDTO(payment);
     }
 
@@ -166,12 +162,10 @@ public class PaymentService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
 
-        // [안전장치] 소유자 확인 (currentUserId를 앞쪽으로)
         if (!currentUserId.equals(payment.getOrder().getUserId())) {
             throw new BusinessException(ErrorCode.PAYMENT_ACCESS_DENIED);
         }
 
-        // [안전장치] 이미 취소된 결제는 다시 취소할 수 없음
         if (payment.getStatus() == PaymentStatus.CANCELLED || payment.isDeleted()) {
             throw new BusinessException(ErrorCode.PAYMENT_ALREADY_CANCELLED);
         }
@@ -212,9 +206,7 @@ public class PaymentService {
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORE_NOT_FOUND));
 
-        // [안전장치] OWNER 권한일 때 본인 가게인지 확인
         if (UserRole.OWNER == dbRole) {
-            // [안전장치] store.getOwner()가 null일 경우를 대비한 체이닝 방어
             if (store.getOwner() == null || !currentUserId.equals(store.getOwner().getUsername())) {
                 throw new BusinessException(ErrorCode.STORE_ACCESS_DENIED);
             }

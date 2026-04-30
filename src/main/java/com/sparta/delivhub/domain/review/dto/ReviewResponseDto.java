@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Getter
 @Builder
-@AllArgsConstructor // For Test
+@AllArgsConstructor
 public class ReviewResponseDto {
     private UUID reviewId;
     private Integer rating;
