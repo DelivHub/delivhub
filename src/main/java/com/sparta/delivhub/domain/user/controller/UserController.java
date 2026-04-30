@@ -100,7 +100,7 @@ public class UserController {
                 .body(ApiResponse.success(response));
     }
 
-    @PreAuthorize("#username == authentication.name")
+    @PreAuthorize("#username == authentication.name or hasAnyRole('MANAGER', 'MASTER')")
     @PutMapping("/{username}/password")
     public ResponseEntity<ApiResponse<Void>> updatePassword(
             @PathVariable String username,
@@ -113,7 +113,7 @@ public class UserController {
                 .body(ApiResponse.success());
     }
 
-    @PreAuthorize("hasAnyRole('MANAGER', 'MASTER') and #username != authentication.name")
+    @PreAuthorize("#username == authentication.name or hasAnyRole('MANAGER', 'MASTER')")
     @DeleteMapping("/{username}")
     public ResponseEntity<ApiResponse<Void>> deleteUser(
             @PathVariable String username,
