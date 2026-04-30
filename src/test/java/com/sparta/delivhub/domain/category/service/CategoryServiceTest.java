@@ -3,7 +3,6 @@ package com.sparta.delivhub.domain.category.service;
 import com.sparta.delivhub.common.dto.BusinessException;
 import com.sparta.delivhub.common.dto.ErrorCode;
 import com.sparta.delivhub.domain.category.dto.requset.CategoryRequestDto;
-import com.sparta.delivhub.domain.category.dto.response.CategoryIdResponseDto;
 import com.sparta.delivhub.domain.category.dto.response.CategoryNameResponseDto;
 import com.sparta.delivhub.domain.category.entity.Category;
 import com.sparta.delivhub.domain.category.repository.CategoryRepository;
@@ -118,6 +117,44 @@ class CategoryServiceTest {
     }
 
     @Test
+    @DisplayName("카테고리 수정 성공")
+    void updateCategory_Success() {
+        // given
+        UUID categoryId = UUID.randomUUID();
+        String userId = "masterUser";
+        User master = User.builder().username(userId).userRole(UserRole.MASTER).build();
+        Category category = Category.builder().id(categoryId).name("한식").build();
+        CategoryRequestDto request = new CategoryRequestDto("중식");
+
+        given(userRepository.findByUsernameAndDeletedAtIsNull(userId)).willReturn(Optional.of(master));
+        given(categoryRepository.findById(categoryId)).willReturn(Optional.of(category));
+
+        // when
+        CategoryNameResponseDto response = categoryService.updateCategory(categoryId, request, userId);
+
+        // then
+        assertThat(response.getName()).isEqualTo("중식");
+    }
+
+    @Test
+    @DisplayName("카테고리 수정 실패 - 존재하지 않는 카테고리")
+    void updateCategory_Fail_CategoryNotFound() {
+        // given
+        UUID categoryId = UUID.randomUUID();
+        String userId = "masterUser";
+        User master = User.builder().username(userId).userRole(UserRole.MASTER).build();
+        CategoryRequestDto request = new CategoryRequestDto("중식");
+
+        given(userRepository.findByUsernameAndDeletedAtIsNull(userId)).willReturn(Optional.of(master));
+        given(categoryRepository.findById(categoryId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> categoryService.updateCategory(categoryId, request, userId))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.CATEGORY_NOT_FOUND.getMessage());
+    }
+
+    @Test
     @DisplayName("카테고리 삭제 성공")
     void deleteCategory_Success() {
         // given
@@ -128,9 +165,10 @@ class CategoryServiceTest {
         given(categoryRepository.findById(categoryId)).willReturn(Optional.of(category));
 
         // when
-        categoryService.deleteCategory(categoryId, userId);
+        CategoryNameResponseDto response = categoryService.deleteCategory(categoryId, userId);
 
         // then
+        assertThat(response.getName()).isEqualTo("분식");
         assertThat(category.getDeletedAt()).isNotNull();
         assertThat(category.getDeletedBy()).isEqualTo(userId);
     }

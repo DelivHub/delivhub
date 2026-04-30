@@ -227,6 +227,23 @@ class OrderServiceTest {
     }
 
     @Test
+    @DisplayName("주문 취소 테스트 - MASTER 권한은 5분 경과 후에도 취소 성공")
+    void cancelOrder_Master_Success_AfterTimeExceeded() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        Order order = Order.builder().userId("user01").build();
+        ReflectionTestUtils.setField(order, "createdAt", LocalDateTime.now().minusMinutes(10));
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        // when
+        orderService.cancelOrder(orderId, "admin", "MASTER");
+
+        // then
+        assertEquals(OrderStatus.CANCELED, order.getStatus());
+    }
+
+    @Test
     @DisplayName("페이지네이션 테스트 - 허용되지 않는 사이즈 입력 시 10으로 고정")
     void validatePageSize_Fallback() {
         // given
@@ -237,5 +254,20 @@ class OrderServiceTest {
 
         // then
         verify(orderRepository).findAll(argThat((Pageable p) -> p.getPageSize() == 10));
+    }
+
+    @Test
+    @DisplayName("주문 삭제 테스트 - 성공")
+    void deleteOrder_Success() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        Order order = Order.builder().userId("user01").build();
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        // when
+        orderService.deleteOrder(orderId, "admin");
+
+        // then
+        assertTrue(order.isDeleted());
     }
 }
