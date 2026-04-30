@@ -25,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -182,5 +183,26 @@ public class MenuService {
         AuthorizationUtils.checkOwnerOrAdminPermission(user, menu.getStore().getOwner().getUsername());
 
         return menu;
+    }
+
+    // 이미지 기반 AI 메뉴 설명
+    @Transactional
+    public ResponseMenuDto generateDescriptionFromImage(
+            UUID menuId, MultipartFile image, String username) {
+        Menu menu = getMenuAndCheckPermission(menuId, username, ErrorCode.MENU_NOT_FOUND_ON_UPDATE);
+
+        if (image == null || image.isEmpty()) {
+            throw new BusinessException(ErrorCode.AI_IMAGE_REQUIRED);
+        }
+
+        String description = aiService.generateDescriptionFromImage(username, image);
+        menu.update(menu.getName(), menu.getPrice(), description);
+
+        List<ResponseOptionDto> options = optionRepository.findAllByMenuIdWithItems(menuId)
+                .stream()
+                .map(ResponseOptionDto::from)
+                .toList();
+
+        return ResponseMenuDto.from(menu, options);
     }
 }

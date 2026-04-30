@@ -56,10 +56,10 @@ class CategoryServiceTest {
         given(categoryRepository.save(any(Category.class))).willReturn(savedCategory);
 
         // when
-        CategoryIdResponseDto response = categoryService.createCategory(request, userId);
+        CategoryNameResponseDto response = categoryService.createCategory(request, userId);
 
         // then
-        assertThat(response.getCategoryId()).isEqualTo(savedCategory.getId());
+        assertThat(response.getName()).isEqualTo(savedCategory.getName());
         verify(categoryRepository).save(any(Category.class));
     }
 

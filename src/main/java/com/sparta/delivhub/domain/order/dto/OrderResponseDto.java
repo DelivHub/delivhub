@@ -1,9 +1,9 @@
-package com.sparta.delivhub.domain.order.service.dto;
+package com.sparta.delivhub.domain.order.dto;
 
-import com.sparta.delivhub.domain.order.service.entity.Order;
-import com.sparta.delivhub.domain.order.service.entity.OrderItemOption;
-import com.sparta.delivhub.domain.order.service.entity.OrderStatus;
-import com.sparta.delivhub.domain.order.service.entity.OrderItem;
+import com.sparta.delivhub.domain.order.entity.Order;
+import com.sparta.delivhub.domain.order.entity.OrderItemOption;
+import com.sparta.delivhub.domain.order.entity.OrderStatus;
+import com.sparta.delivhub.domain.order.entity.OrderItem;
 import lombok.Builder;
 import lombok.Getter;
 

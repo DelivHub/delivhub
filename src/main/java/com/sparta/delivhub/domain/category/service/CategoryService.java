@@ -27,7 +27,7 @@ public class CategoryService {
     private final UserRepository userRepository;
 
     @Transactional
-    public CategoryIdResponseDto createCategory(CategoryRequestDto categoryRequestDto, String userId) {
+    public CategoryNameResponseDto createCategory(CategoryRequestDto categoryRequestDto, String userId) {
         User user = userRepository.findByUsernameAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -39,8 +39,8 @@ public class CategoryService {
 
         Category save = categoryRepository.save(category);
 
-        return CategoryIdResponseDto.builder()
-                .categoryId(save.getId())
+        return CategoryNameResponseDto.builder()
+                .name(category.getName())
                 .build();
     }
 
@@ -57,7 +57,7 @@ public class CategoryService {
     }
 
     @Transactional
-    public CategoryIdResponseDto updateCategory(UUID id,  CategoryRequestDto categoryRequestDto, String userId) {
+    public CategoryNameResponseDto updateCategory(UUID id,  CategoryRequestDto categoryRequestDto, String userId) {
         User user = userRepository.findByUsernameAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -71,20 +71,20 @@ public class CategoryService {
                 categoryRequestDto.getIsHidden()
         );
 
-        return CategoryIdResponseDto.builder()
-                .categoryId(category.getId())
+        return CategoryNameResponseDto.builder()
+                .name(category.getName())
                 .build();
     }
 
     @Transactional
-    public CategoryIdResponseDto deleteCategory(UUID id, String userId) {
+    public CategoryNameResponseDto deleteCategory(UUID id, String userId) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
         category.softDelete(userId);
 
-        return CategoryIdResponseDto.builder()
-                .categoryId(category.getId())
+        return CategoryNameResponseDto.builder()
+                .name(category.getName())
                 .build();
     }
 

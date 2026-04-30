@@ -8,6 +8,6 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class StoreIdResponseDto {
-    private UUID storeId;
+public class StoreNameResponseDto {
+    private String name;
 }

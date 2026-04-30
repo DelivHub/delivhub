@@ -1,7 +1,7 @@
 package com.sparta.delivhub.domain.payment.entity;
 
 import com.sparta.delivhub.common.entity.BaseEntity;
-import com.sparta.delivhub.domain.order.service.entity.Order;
+import com.sparta.delivhub.domain.order.entity.Order;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
