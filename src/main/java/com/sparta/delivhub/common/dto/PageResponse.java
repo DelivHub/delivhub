@@ -11,6 +11,7 @@ public class PageResponse<T> {
     private int size;
     private long totalElements;
     private int totalPages;
+    private String sort;
 
     public PageResponse(Page<T> pageInfo) {
         this.content = pageInfo.getContent();
@@ -18,5 +19,6 @@ public class PageResponse<T> {
         this.size = pageInfo.getSize();
         this.totalElements = pageInfo.getTotalElements();
         this.totalPages = pageInfo.getTotalPages();
+        this.sort = pageInfo.getSort().toString().replace(": ", ",");
     }
 }
